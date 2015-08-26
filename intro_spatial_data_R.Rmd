@@ -1,12 +1,12 @@
 ---
 title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
-date: "8/24/2015"
+date: "8/27/2015"
 output:
   html_document:
-    toc: true
+    toc:yes
   pdf_document:
-    toc: true
+    toc: yes
 ---
 
 
@@ -38,7 +38,7 @@ Key information:
 
 ***
 
-#Setup
+#Setup  
 
 ###Libraries & Settings
 
@@ -86,7 +86,7 @@ Using `readOGR` from the `rgdal` package, you can read in a shapefile.
 ```{r shapefile}
 # dsn is the path name & layer is the name of the file. NOTE: you do not need to add an extension to the layer name
 
-cc = readOGR(dsn='data',layer='ca_current',verbose=FALSE)
+cc = readOGR(dsn='data',layer='ca_current')
 ```
 
 The information in the summary of the shapefile is important if you need to understand what projection your **SpatialPolygonsDataFrame** is in, along with the extent and number of features. In this case there are just two features, the EEZs of the US West Coast and northern Baja Mexico. You can get this information by just typing in the name 'cc'
@@ -255,11 +255,11 @@ Just by plotting both the SST and OA data, you can tell right away that these tw
 
 Here you can see the difference:
 
-```{r resample}
+```{r resample,message=F,warning=F,quiet=T,verbose=F,results=F}
 
 #include progress='text' in any raster function to see a progress bar as the function runs! This is one of my favorite R things!
-oa_res = resample(oa_crop,sstAvg,method='ngb',progress='text',verbose=F)
-oa_bil = resample(oa_crop,sstAvg,method='bilinear',progress='text',verbose=F)
+oa_res = resample(oa_crop,sstAvg,method='ngb')#,progress='text')
+oa_bil = resample(oa_crop,sstAvg,method='bilinear')#,progress='text')
 
 par(mfrow=c(1,2))
 plot(oa_res,col=cols);plot(oa_bil,col=cols)
@@ -272,7 +272,9 @@ Again we can condense this script by using pipes!
 
 oa = projectRaster(oaAvg,crs=('+proj=longlat'))%>%
         crop(.,sstAvg)%>%
-          resample(.,sstAvg,method='ngb',progress='text',verbose=F);plot(oa,col=cols)
+          resample(.,sstAvg,method='ngb')#,progress='text')
+
+plot(oa,col=cols)
 ```
 
 **(5) Check prepped data**  
@@ -280,6 +282,11 @@ Check to see that we can use the SST and OA data together now
 ```{r stack data}
 stack(oa,sstAvg) #No error and the stack has two layers so it looks good!
 ```
+
+
+#Analysis  
+
+**(1) The first thing we need to do is eliminate all cells in both our SST and OA layers that fall outside of our species environmental range**
 
 Setting our parameters for Aquaculture suitability
 
@@ -406,10 +413,11 @@ Summary stats - looking at total area in Mexico and California for aquaculture
 
 head(cc)
 
-cc_ras = rasterize(cc,sstAvg,progress='text');cc_ras
+cc_ras = rasterize(cc,sstAvg)#,progress='text')
+cc_ras
 plot(cc_ras) #R automatically assigned 1 and 2 as the ID which is the value of allcells in those regions. You can also pick your own
 
-cc_ras_ID = rasterize(cc,sstAvg,progress='text',field="ID");cc_ras_ID
+cc_ras_ID = rasterize(cc,sstAvg,field="ID");cc_ras_ID
 plot(cc_ras_ID)
 
 ```
