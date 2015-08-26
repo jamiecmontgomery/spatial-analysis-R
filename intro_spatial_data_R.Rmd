@@ -3,9 +3,7 @@ title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
 date: "8/27/2015"
 output:
-  html_document:
-    toc:yes
-  pdf_document:
+  pdf_document: 
     toc: yes
 ---
 
@@ -201,7 +199,7 @@ plot(sstAvg,col=cols);plot(cc,add=T)
 
 **(1) Read in the OA raster data**  
 
-Read in this data the same way as the SST data, using `raster()`. This data is the &#937; aragonite saturation state of the water. For a frame of reference, values at or less than one are undersaturated in regards to aragonite and pose large problems for calcifying organisms.  
+Read in this data the same way as the SST data, using `raster()`. This data is the Omega aragonite saturation state of the water. For a frame of reference, values at or less than one are undersaturated in regards to aragonite and pose large problems for calcifying organisms.  
 ```{r avg oa}
 
 oaAvg = raster('data/oa_avg.tif');oaAvg
@@ -263,8 +261,10 @@ oa_bil = resample(oa_crop,sstAvg,method='bilinear')#,progress='text')
 
 par(mfrow=c(1,2))
 plot(oa_res,col=cols);plot(oa_bil,col=cols)
-dev.off()
-```
+
+```  
+
+  
 *NOTE: Typically you'll want to disaggregate cells to match data of a higher resolution. Otherwise, if we aggregate the cells from the SST data, we would lose data.*  
 
 Again we can condense this script by using pipes!  
@@ -284,15 +284,16 @@ stack(oa,sstAvg) #No error and the stack has two layers so it looks good!
 ```
 
 
-#Analysis  
+#Analysis   
 
-**(1) The first thing we need to do is eliminate all cells in both our SST and OA layers that fall outside of our species environmental range**
+###Select cells 
 
-Setting our parameters for Aquaculture suitability
+**(1) Remove all cells from the Sea Surface Temperature layer that fall out of the species temperature range**
 
-These are completely arbitrary and are just to show the utility of the following functions. 
+The Red Tuna Crab grows best in waters that are **between 12 and 18 degrees Celsius.**  
 
-Let's say our species grow best in waters that are between 12 and 18 degrees celsius
+Remembering that `sstAvg` is our current SST layer, you can eliminate all cells with values outside of your range in a few different ways. 
+I prefer to do a simple subset using brackets, but first assigning a new variable so you don't overwrite `sstAvg`
 
 ```{r}
 
@@ -302,69 +303,93 @@ sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
 #I prefer the following
 
 sstPref = sstAvg
-sstPref[sstPref<12 | sstPref>18]<-NA
-plot(sstPref,col=cols)
-plot(cc,add=T)
+sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA
+plot(sstPref,col=cols);plot(cc,add=T)
 ```
 
-Our species also prefers water that has an aragonite saturation state between 2.7 and 3
+**(2) Remove all cells from the Ocean Acidification layer that fall out of the species preferred range**  
+
+Our species also prefers water that has an aragonite saturation state **between 2.4 and 3**
 
 ```{r}
-
 oaPref = oa
 oaPref[oaPref<2.4|oaPref>3]<-NA
-plot(oaPref,col=cols)
-plot(cc,add=T)
+plot(oaPref,col=cols); plot(cc,add=T)
 ```
 
-Now that we have our two rasters with suitable parameters, there are a lot of different ways to select overlapping cells. Here is the way I think about it:
+**(3) Change all remaining cell values to 1**
 
-Set all viable cells to equal 1
+Now that we have our two rasters with suitable parameters, there are a lot of different ways to select overlapping cells. Here is the way I think about it:  
+
+Set all viable cells in SST to equal 1  
 ```{r}
+sstBin = sstPref            #assigning new variable sstBin (binary) so that sstPref is not overwritten
+sstBin[!is.na(sstBin)]<-1   #setting all cells that are not NA to 1
+plot(sstBin);plot(cc,add=T)
+```
 
-sstBin = sstPref
-sstBin[!is.na(sstBin)]<-1
+...and same for OA
+```{r}
 
 oaBin = oaPref
 oaBin[!is.na(oaBin)]<-1
-```
+plot(oaBin);plot(cc,add=T)
 
-Add the two rasters together. Cells where both enviromental requirements are met will be equal to 2.
-```{r}
-combined = sum(sstBin,oaBin,na.rm=T);combined
-plot(combined);plot(cc,add=T)
 ```
 
 
-Select just viable cells
+Now that we have these two binary layers, we can combine them by summing all cells from both layers and those cells with a value equal to 2 will be our viable cells!
+
+Multiply the two rasters together using `overlay()` from the raster package and the resulting cells, equal to 1, are the cells that meet both SST and OA requirements
 ```{r}
 
-prefRas = calc(combined,fun=function(x){ifelse(x==2,1,NA)})
+cells = overlay(sstBin,oaBin,fun=function(x,y){x*y})
+plot(cells);plot(cc,add=T)
 
-plot(prefRas);plot(cc,add=T)
+```
+***
+**SIDE NOTE:**  
+You can perform mathematical operations on single or multiple raster layers using base R functions. Both `calc()` and `overlay()` are useful when you have complex functions working on these layers. Here are some examples of how you can use raster layers with base R functions:
+
+```{r}
+#sum
+sum = sum(sstBin,oaBin,na.rm=T);plot(sum) #gives you cells equal to 0, 1 and 2. 
+#power
+power = sstAvg^4;plot(power,col=cols)
+#average
+avg = mean(sstAvg,oa);plot(avg,col=cols)
+```
+***
+#Additional Functions
+
+This could be all you need - but I want to show some additional steps to highlight more functionality in R.  
+  
+  
+###Mask  
+
+You can remove cells outside of your region by using the `mask()` function. Here, you only want to keep cells that are within the Mexican or US EEZs.
+```{r mask}
+
+cellsEEZ = mask(cells,cc)
+
+plot(cellsEEZ);plot(cc,add=T)
 ```
 
-This could be all you need - but a lot more can be done.
+###Crop to region
 
-
-Mask 
-```{r clip}
-
-m = mask(prefRas,cc)
-
-plot(m);plot(cc,add=T)
-```
-
-Crop to the suitable region
+You can then crop your raster to a smaller extent
 ```{r}
 
-c = crop(m,extent(-125,-110,25,35)) #setting extent by eyeing it
+cellsCrop = crop(cellsEEZ,extent(-125,-110,25,35)) #setting extent by eyeing it
+plot(cellsCrop);plot(cc,add=T)
 ```
 
-Another nifty thing - draw extent
-```{r}
+###Draw Extent
 
-plot(m);plot(cc,add=T)
+Another nifty thing - if you don't know the extent, you can draw it and R will tell you! You can then save this extent and crop to it
+```{r,warning=F,message=F}
+
+plot(cellsEEZ);plot(cc,add=T)
 ext <- drawExtent(show=TRUE,col='red')
 
 #class       : Extent 
@@ -372,73 +397,112 @@ ext <- drawExtent(show=TRUE,col='red')
 #xmax        : -113.3571 
 #ymin        : 27.48709 
 #ymax        : 35.00825 
-ext=extent(-126.729,-113.3571,27.48709,35.00825)
-c=crop(m,ext)
-plot(c);plot(cc,add=T)
+
+ext=extent(-126.729,-113.3571,27.48709,35.00825) #I picked this one,
+cropCells=crop(cellsEEZ,ext)
+plot(cropCells);plot(cc,add=T)
 ```
 
+###Mask out Marine Protected Areas and National Marine Sanctuaries  
+  
+There are two shapefiles in the **data** folder. One is 'MPA_State' which are state MPAs, and one is 'National Marine Sanctuaries'. To go along with the aquaculture analysis, lets say that cells within these regions must be excluded from the suitability analysis.
 
-Add in Marine Protected areas and crop to our area
-```{r mpas}
+```{r mpas,message=F,warning=F}
 
 #marine protected areas
-mpa = readOGR(dsn='data',layer='MPA_State');mpa
+mpa = readOGR(dsn='data',layer='MPA_State',verbose=F);mpa
 plot(mpa)
 
 # try to crop to our extent
 mpa_c = crop(mpa,ext);mpa_c
+```
 
-#notice mpa_c does not throw an error, but it is a null object. This is because the MPA shapefile is not in the same projection
+Notice that when creaing `mpa_c` there is no error. But when you call it the output is NULL, indicating a NULL object. This is because the MPA shapefile is **not in the same projection**  
 
-mpa = spTransform(mpa,CRS("+proj=longlat"));mpa #spTransform is part of rgdal package
+Using `spTransform()` from the `rgdal` package, you can project a shapefile in a similar manner as raster.
+
+```{r}
+
+mpa = spTransform(mpa,CRS("+proj=longlat")) #spTransform is part of rgdal package
 
 #crop again
 mpa_c = crop(mpa,ext);plot(mpa_c);plot(cc,add=T)
 
+```
+
+The same can be done with the National Marine Sanctuary shapefile, using pipes!
+```{r}
 
 #national marine sanctuaries
-nms = readOGR(dsn='data',layer='National Marine Sanctuaries')%>%
-          spTransform(.,CRS("+proj=longlat"));nms
-plot(nms);plot(cc,add=T)
+nms = readOGR(dsn='data',layer='National Marine Sanctuaries',verbose=F)%>%
+          spTransform(.,CRS("+proj=longlat"))%>%
+            crop(.,ext)
 
+plot(nms);plot(cc,add=T)
 
 ```
 
+To remove cells in the MPAs and NMS just use the `mask()` function but set `inverse=T` so that all cells **outside** of the polygons are kept and those inside are set to NA.
 
-Summary stats - looking at total area in Mexico and California for aquaculture
+```{r mask inverse}
 
-(1) Rasterize
+cellsAQ = mask(cropCells,mpa_c,inverse=T)%>%
+            mask(.,nms,inverse=T)
 
-```{r}
+plot(cellsAQ);plot(cc,add=T)
+```
+  
+###Rasterize & Zonal Stats
 
+With any raster analysis, you likely aren't just creating a pretty map. Here is an example of running **zonal statistics** on a raster.  
+
+We want to look at the total area (km2) in Mexico and California for aquaculture of Red Tuna Crab.  
+
+**(1) Rasterize shapefile**  
+
+First you want to turn a shapefile (california current) into a raster of the same projection/extent/resolution as your cells.
+
+```{r rasterize}
+
+#let's take a look at what the CC dataframe looks like again
 head(cc)
 
-cc_ras = rasterize(cc,sstAvg)#,progress='text')
-cc_ras
-plot(cc_ras) #R automatically assigned 1 and 2 as the ID which is the value of allcells in those regions. You can also pick your own
+ccZones = rasterize(cc,cellsAQ)#,progress='text')
+ccZones
+plot(ccZones)
 
-cc_ras_ID = rasterize(cc,sstAvg,field="ID");cc_ras_ID
+```  
+R automatically assigned 1 and 2 as the cell values. You can set your own values too based on a field or another defined vector of ids.  
+
+```{r rasterize by field}
+
+#using a field from the shapefile
+
+cc_ras_ID = rasterize(cc,cellsAQ,field="ID");cc_ras_ID
 plot(cc_ras_ID)
 
 ```
 
-(2) Run zonal stats
+**(2) Run zonal stats**
 
-```{r}
+To get the total viable area for aquaculture of Red Tuna Crab in the California Current, run `zonal()` using `ccZones`. The `zonal()` function is given any sort of function you define including sum, mean, max, etc.  
 
-plot(prefRas)
-cells = zonal(prefRas,cc_ras,fun='sum') #total number of cells since they are all equal to 1
+Since the current values of `prefRas` are all equal to 1, we can simply sum up the number of cells in each EEZ.
 
-#total area (bring in the area function)
+```{r zonal}
 
-prefArea = area(prefRas,na.rm=T);plot(prefArea,col=cols) #gives km2
-
-area = zonal(prefArea,cc_ras,fun='sum')%>%as.data.frame()
+plot(cellsAQ)
+cellsSum = zonal(cellsAQ,ccZones,fun='sum') #total number of cells since they are all equal to 1
+cellsSum
 ```
 
+But that isn't as useful as calculating the actual area in km2. Using the `area()` function from the `raster` package you can create a new raster with cell values equal to their area, and then run `zonal()`.  
 
-plot(c)
+```{r area zonal}
 
-k = mask(c,mpa,inverse=T)
-k = mask(k,nms,inverse=T)
+cellsArea = area(cellsAQ,na.rm=T);plot(cellsArea,col=cols) #gives are in km2
+
+area = zonal(cellsArea,ccZones,fun='sum');area
+```
+
 
