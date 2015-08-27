@@ -87,14 +87,6 @@ Using `readOGR` from the `rgdal` package, you can read in a shapefile.
 cc = readOGR(dsn='data',layer='ca_current')
 ```
 
-The information in the summary of the shapefile is important if you need to understand what projection your **SpatialPolygonsDataFrame** is in, along with the extent and number of features. In this case there are just two features, the EEZs of the US West Coast and northern Baja Mexico. You can get this information by just typing in the name 'cc'
-
-```{r shapefile summary}
-
-cc
-
-```
-
 **(2) Plot a Shapefile**  
 
 Plotting a shapefile is just as easy as:
@@ -106,6 +98,15 @@ And to add land to the map, do the following (from the `maps` package)
 ```{r maps}
 plot(cc)
 map('world',fill=T,add=T,col='gray')
+```
+
+
+The information in the summary of the shapefile is important if you need to understand what projection your **SpatialPolygonsDataFrame** is in, along with the extent and number of features. In this case there are just two features, the EEZs of the US West Coast and northern Baja Mexico. You can get this information by just typing in the name 'cc'
+
+```{r shapefile summary}
+
+cc
+
 ```
 
 **(3) Attribute Tables**  
@@ -232,7 +233,7 @@ Here, we want to project from *Mollweide* to *longlat*
 
 ```{r reproject,warning=FALSE}
 
-oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'));plot(oa_proj,col=cols) #see a warning about finite points
+oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))#see a warning about finite points
 plot(oa_proj,col=cols)
 ```
 
@@ -261,7 +262,7 @@ oa_bil = resample(oa_crop,sstAvg,method='bilinear')#,progress='text')
 
 par(mfrow=c(1,2))
 plot(oa_res,col=cols);plot(oa_bil,col=cols)
-
+#dev.off()
 ```  
 
   
@@ -296,9 +297,9 @@ Remembering that `sstAvg` is our current SST layer, you can eliminate all cells 
 I prefer to do a simple subset using brackets, but first assigning a new variable so you don't overwrite `sstAvg`
 
 ```{r}
-
+plot(sstAvg,col=cols);plot(cc,add=T)
 # trying something like this gives you all of the cell values that fit your condition. Not exactly what we want
-sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
+#sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
 
 #I prefer the following
 
@@ -312,6 +313,7 @@ plot(sstPref,col=cols);plot(cc,add=T)
 Our species also prefers water that has an aragonite saturation state **between 2.4 and 3**
 
 ```{r}
+plot(oa,col=cols)
 oaPref = oa
 oaPref[oaPref<2.4|oaPref>3]<-NA
 plot(oaPref,col=cols); plot(cc,add=T)
@@ -369,7 +371,7 @@ This could be all you need - but I want to show some additional steps to highlig
 
 You can remove cells outside of your region by using the `mask()` function. Here, you only want to keep cells that are within the Mexican or US EEZs.
 ```{r mask}
-
+plot(cells, col=cols);plot(cc,add=T)
 cellsEEZ = mask(cells,cc)
 
 plot(cellsEEZ);plot(cc,add=T)
