@@ -3,7 +3,9 @@ title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
 date: "8/27/2015"
 output:
-  pdf_document: 
+  html_document:
+    toc: yes
+  pdf_document:
     toc: yes
 ---
 
