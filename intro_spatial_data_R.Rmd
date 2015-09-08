@@ -21,7 +21,12 @@ I've drafted this informal introductory session in the form of answering a scien
 
 **Where are optimal sites for Red Tuna Crab (*Pleuroncodes planipes*) aquaculture within the California Current?**  
 
-![](./images/crab.png)
+```{r fig.width=4.5, fig.height=10,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG('./images/crab.png')
+ grid.raster(img)
+```
 
 We will answer this question by taking into consideration the following spatial data:  
 **1. Ocean Acidification**  
