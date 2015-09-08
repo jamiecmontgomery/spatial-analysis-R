@@ -1,11 +1,10 @@
 ---
 title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
-date: "8/27/2015"
 output:
-  html_document:
-    toc: yes
   pdf_document:
+    toc: yes
+  html_document:
     toc: yes
 ---
 
@@ -58,6 +57,7 @@ library(raster)       #Main raster library with nearly all functions used in thi
 library(rgdal)        #Spatial library - most functions used from rgdal are for vectors (shapefiles)
 library(rasterVis)    #Useful for raster visualizations
 library(maps)         #Has a database of maps. I use this to add a map to my raster to visualize land boundaries
+library(rgeos)        #Need this library for topology operations on geometries
 
 library(dplyr)        #NOT spatial - this is a data wrangling library
 library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
@@ -99,6 +99,8 @@ plot(cc)
 And to add land to the map, do the following (from the `maps` package)
 ```{r maps}
 plot(cc)
+
+#add a landmap to your shapefile
 map('world',fill=T,add=T,col='gray')
 ```
 
@@ -183,7 +185,7 @@ You can perform operations on a RasterStack by using the `calc()` function from 
 
 Here we will take the mean value per cell, and then convert to Celsius by subtracting 273.15.
 ```{r calc sst}
-sstAvg = calc(sstStack,fun=function(x){mean(x,na.rm=T)-273.15}) #calculate the average SST in Kelvin then convert to Celsius
+sstAvg = calc(sstStack,fun=function(x){mean(x,na.rm=T)-273.15})#,filename='data/sstAvg.tif') #calculate the average SST in Kelvin then convert to Celsius. By adding 'filename=' R will directly save the raster into the defined file rather than memory
 
 plot(sstAvg,col=cols);plot(cc,add=T)
 ```
@@ -235,7 +237,8 @@ Here, we want to project from *Mollweide* to *longlat*
 
 ```{r reproject,warning=FALSE}
 
-oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))#see a warning about finite points
+oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))#You will see a warning about finite points. I'm not entirely sure what this warning means but I suspect it has to do with warping of some cells when reprojecting. I've googled it and it seems like this is a harmless warning.
+
 plot(oa_proj,col=cols)
 ```
 
@@ -264,7 +267,7 @@ oa_bil = resample(oa_crop,sstAvg,method='bilinear')#,progress='text')
 
 par(mfrow=c(1,2))
 plot(oa_res,col=cols);plot(oa_bil,col=cols)
-#dev.off()
+#dev.off()  # This turns off the graphic device to stop plotting in 2x1 format
 ```  
 
   
@@ -306,7 +309,7 @@ plot(sstAvg,col=cols);plot(cc,add=T)
 #I prefer the following
 
 sstPref = sstAvg
-sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA
+sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA using brackets to subset
 plot(sstPref,col=cols);plot(cc,add=T)
 ```
 
@@ -351,7 +354,8 @@ cells = overlay(sstBin,oaBin,fun=function(x,y){x*y})
 plot(cells);plot(cc,add=T)
 
 ```
-***
+***  
+
 **SIDE NOTE:**  
 You can perform mathematical operations on single or multiple raster layers using base R functions. Both `calc()` and `overlay()` are useful when you have complex functions working on these layers. Here are some examples of how you can use raster layers with base R functions:
 
@@ -363,8 +367,9 @@ power = sstAvg^4;plot(power,col=cols)
 #average
 avg = mean(sstAvg,oa);plot(avg,col=cols)
 ```
-***
-#Additional Functions
+***  
+
+#Additional Functions  
 
 This could be all you need - but I want to show some additional steps to highlight more functionality in R.  
   
@@ -451,7 +456,7 @@ To remove cells in the MPAs and NMS just use the `mask()` function but set `inve
 ```{r mask inverse}
 
 cellsAQ = mask(cropCells,mpa_c,inverse=T)%>%
-            mask(.,nms,inverse=T)
+            mask(.,nms,inverse=T) #by setting inverse=T, all cells that do not overlap with the mask are kept and those overlapping the mask are set to NA
 
 plot(cellsAQ);plot(cc,add=T)
 ```
