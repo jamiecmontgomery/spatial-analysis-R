@@ -2,8 +2,6 @@
 title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
 ---
@@ -21,7 +19,7 @@ I've drafted this informal introductory session in the form of answering a scien
 
 **Where are optimal sites for Red Tuna Crab (*Pleuroncodes planipes*) aquaculture within the California Current?**  
 
-```{r fig.width=4.5, fig.height=10,echo=FALSE}
+```{r ,echo=FALSE,warning=F,message=F}
 library(png)
 library(grid)
 img <- readPNG('./images/crab.png')
@@ -56,7 +54,7 @@ There are a lot of spatial packages for R, we will touch on some of them here bu
 * **maptools:** tools for reading and writing spatial data (visualisation)  
 * **ncdf4:** Use with NetCDF files. Note that the `raster` package is also able to read NetCDF files and I prefer to use Raster whenever possible.  
 
-```{r libraries,message=F}
+```{r libraries,message=F,warning=F}
 
 library(raster)       #Main raster library with nearly all functions used in this analysis
 library(rgdal)        #Spatial library - most functions used from rgdal are for vectors (shapefiles)
