@@ -9,6 +9,6 @@ The code is stored in the `intro_spatial_data_R.Rmd` file. The code has been ren
 ####What areas within the California Current are suitable for Red Tuna Crab aquaculture?
 
 
-![](./images/crab.png)
+![](./images/crab.jpg)
 
 *Disclaimer: This is a completely made up scientific question. I very much doubt that red tuna crabs will be a viable aquaculture or wild caught resource and their environmental preferences are also entirely arbitrary.*
