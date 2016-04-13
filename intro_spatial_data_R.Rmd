@@ -2,6 +2,8 @@
 title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
 ---
@@ -22,8 +24,8 @@ I've drafted this informal introductory session in the form of answering a scien
 ```{r ,echo=FALSE,warning=F,message=F}
 library(png)
 library(grid)
-img <- readPNG('./images/crab.png')
- grid.raster(img)
+#img <- readPNG('./images/crab.jpg')
+ #grid.raster(img)
 ```
 
 We will answer this question by taking into consideration the following spatial data:  
