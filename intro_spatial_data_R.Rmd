@@ -2,13 +2,13 @@
 title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
 output:
-  html_document:
-    toc: true
-    toc_depth: 3
-    toc_float: true
-    code_folding: show
   pdf_document:
     toc: yes
+  html_document:
+    code_folding: show
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
 ---
 
 
@@ -25,7 +25,7 @@ I've drafted this informal introductory session in the form of answering a scien
 
 ```{r ,echo=FALSE,warning=F,message=F}
 
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 library(png)
 library(grid)
 img <- readPNG('./images/seamonkeys.png')
