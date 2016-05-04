@@ -91,7 +91,7 @@ There are a lot of spatial packages for R, we will touch on some of them here bu
 * **raster:** Reading, writing, manipulating, analyzing and modeling of gridded spatial data  
 * **rgdal:** Provides the most important and basic spatial functionalities. Provides bindings to Frank Warmerdam’s Geospatial Data Abstraction Library (GDAL) (>= 1.6.3, < 2) and access to projection/transformation operations from the PROJ.4 library   
 * **sp:** provides classes and functions for spatial data   
-* **rgeos:** Interface to Geometry Engine – Open Source (GEOS) using the C API for topology operations on geometries.  
+* **rgeos:** Provides spatial vector operations like buffer and intersect. Interface to Geometry Engine – Open Source (GEOS) using the C API for topology operations on geometries.  
 * **maps:** This package has pre-loaded maps stored which can be added to your map plots. 
 * **maptools:** tools for reading and writing spatial data (visualisation)  
 * **ncdf4:** Use with NetCDF files. Note that the `raster` package is also able to read NetCDF files and I prefer to use Raster whenever possible.  
