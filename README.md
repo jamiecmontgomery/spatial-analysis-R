@@ -2,9 +2,7 @@
 
 ###Jamie Afflerbach
 
-##[Click here for the tutorial in HTML format](http://jafflerbach.github.io/spatial-analysis-R/intro_spatial_data_R.html)
-
-##[Click here for tutorial in PDF format](https://github.com/jafflerbach/spatial-analysis-R/blob/master/intro_spatial_data_R.pdf)
+##[Click here for the tutorial](http://jafflerbach.github.io/spatial-analysis-R/intro_spatial_data_R.html)
 
 R is getting better and better for spatial data visualization and analyses. This tutorial specifically focuses on working with raster, or gridded, data in R.
 
