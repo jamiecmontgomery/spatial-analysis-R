@@ -11,21 +11,22 @@ output:
 
 #Introduction
 
-This is an introduction to Spatial Analysis in R. I've developed this code based on some common questions people have asked me, or that I've asked myself, over the past year. There is a lot here to help you get started, but there is also **a lot** more to learn!
+This is an introduction to Spatial Analysis in R. I've developed this code based on some common questions from friends and colleagues or ones that I've asked myself. There is a lot here to help you get started, but there is also **a lot** more to learn!
 
-The focus here will be on raster analysis, rather than vector (shapefiles, polygons, polylines, points, etc.), although there's a bit of that too.  
+The focus here will be on raster analysis, rather than vector (shapefiles, polygons, polylines, points, etc.).
   
   
-
 I've drafted this informal introductory session in the form of answering a scientific question....  
 
-**Where are optimal sites for Red Tuna Crab (*Pleuroncodes planipes*) aquaculture within the California Current?**  
+**Where are optimal sites for Red Tuna Crab (*Pleuroncodes planipes*) aquaculture off the west coast?**  
 
 ```{r ,echo=FALSE,warning=F,message=F}
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 library(png)
 library(grid)
-#img <- readPNG('./images/crab.jpg')
- #grid.raster(img)
+img <- readPNG('./images/crab.jpg')
+ grid.raster(img)
 ```
 
 We will answer this question by taking into consideration the following spatial data:  
@@ -33,12 +34,49 @@ We will answer this question by taking into consideration the following spatial 
 **2. Sea Surface Temperature**  
 **3. Marine Protected Areas**  
 
-Key information:  
+Key information for optimal growth:  
 
-- Red tuna crabs like water temperatures between **12 and 18 degrees Celsius**  
-- They also prefer water that has an aragonite saturation state between **2.4 and 3**  
+- Sea surface temperatures between **12 and 18 degrees Celsius**  
+- Aragonite saturation state between **2.4 and 3** 
 
 *Disclaimer: these are completely made up parameters. Also I highly doubt red tuna crabs would ever be a viable aquaculture or wild-caught species.*
+
+***
+
+#Background
+
+Raster or **gridded** data are stored as a grid of value which are rendered on a map as pixels. Each pixel value represents an area on the Earth's surface.
+
+
+```{r ,echo=FALSE}
+library(png)
+img <- readPNG('images/raster_concept.png')
+ grid.raster(img)
+```
+
+###Examples
+
+Some examples of raster data include oceanographic datasets such as Sea Surface Temperature, land use maps and digital elevation maps.
+
+
+```{r ,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG('images/examples.png')
+ grid.raster(img)
+```
+
+
+###What is a GeoTIFF??
+
+Raster data can come in many different formats. In this tutorial, we will use the geotiff format which has the extension `.tif`. A `.tif` file stores metadata or attributes about the file as embedded tif tags. These tags can include the following raster metadata:
+
+  1. A Coordinate Reference System (`CRS`)
+  2. Spatial Extent (`extent`)
+  3. Values that represent missing data (`NoDataValue`)
+  4. The `resolution` of the data
+
+*Information in this section is borrowed from [NEON's Intro to Raster Data in R](http://neondataskills.org/R/Introduction-to-Raster-Data-In-R/) tutorial, another great resource*
 
 ***
 
@@ -52,18 +90,20 @@ There are a lot of spatial packages for R, we will touch on some of them here bu
 * **rgdal:** Provides the most important and basic spatial functionalities. Provides bindings to Frank Warmerdam’s Geospatial Data Abstraction Library (GDAL) (>= 1.6.3, < 2) and access to projection/transformation operations from the PROJ.4 library   
 * **sp:** provides classes and functions for spatial data   
 * **rgeos:** Interface to Geometry Engine – Open Source (GEOS) using the C API for topology operations on geometries.  
-* **maps:** Display of maps. I use this to add a map to my raster  
+* **maps:** This package has pre-loaded maps stored which can be added to your map plots. 
 * **maptools:** tools for reading and writing spatial data (visualisation)  
 * **ncdf4:** Use with NetCDF files. Note that the `raster` package is also able to read NetCDF files and I prefer to use Raster whenever possible.  
+* **tmap:** ggplot 2 for maps! A new package that gives Arc-like functionality to creating publication ready maps.
 
-```{r libraries,message=F,warning=F}
+Load all libraries:
+
+```{r libraries}
 
 library(raster)       #Main raster library with nearly all functions used in this analysis
 library(rgdal)        #Spatial library - most functions used from rgdal are for vectors (shapefiles)
 library(rasterVis)    #Useful for raster visualizations
 library(maps)         #Has a database of maps. I use this to add a map to my raster to visualize land boundaries
 library(rgeos)        #Need this library for topology operations on geometries
-
 library(dplyr)        #NOT spatial - this is a data wrangling library
 library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
 
@@ -71,26 +111,37 @@ library(RColorBrewer) #Also not spatial - used to set the spectral color scheme
 
 
 
-For raster data visualization I really like to use the spectral color scheme rather than the base graphics package. I'm also setting the plotting margins much smaller so that the plots will show up larger in the viewing pane.
+For raster data visualization I prefer the spectral color scheme rather than the base graphics package. I'm also setting the plotting margins much smaller so that the plots will show up larger in the viewing pane.
 ```{r settings}
-cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) # rainbow color scheme
+# rainbow color scheme
+cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) 
 
 #setting margins for plotting
 par(mar=c(2,2,1,1))
 ```
+
 ***
+
 #Data Prep
 
-###Vector data  
+My first step in a spatial analysis is prepping the data, which includes the following:
+
+- Read in data 
+- Pre-process the data is it "plays nicely", 
+- Visualize the data
+
+
+##Read in shapefile
 
 
 **(1) Reading in a shapefile**  
 
-Using `readOGR` from the `rgdal` package, you can read in a shapefile. 
+Read in a shapefile of the US West Coast and northern Baja peninsula by using `readOGR` from the `rgdal` package.
 
 ```{r shapefile}
 # dsn is the path name & layer is the name of the file. NOTE: you do not need to add an extension to the layer name
 
+#named cc for california current
 cc = readOGR(dsn='data',layer='ca_current')
 ```
 
@@ -109,8 +160,7 @@ plot(cc)
 map('world',fill=T,add=T,col='gray')
 ```
 
-
-The information in the summary of the shapefile is important if you need to understand what projection your **SpatialPolygonsDataFrame** is in, along with the extent and number of features. In this case there are just two features, the EEZs of the US West Coast and northern Baja Mexico. You can get this information by just typing in the name 'cc'
+The information in the summary of the shapefile is important if you need to understand what `projection` your **SpatialPolygonsDataFrame** is in, along with the `extent` and number of features. In this case there are just two features, the EEZs of the US West Coast and northern Baja Mexico. You can get this information by just typing in the name 'cc'
 
 ```{r shapefile summary}
 
@@ -120,7 +170,8 @@ cc
 
 **(3) Attribute Tables**  
 
-You can look at the attribute table of a shapefile by calling ...@data. The dataframe associated with the shapefile can be treated just as any other dataframe. Columns can be added, names can be changed, tables can be joined. *There are some caveats - such as filtering - that are important but I will not go into that here.*
+You can look at the data held within a shapefile by calling `cc@data`. The dataframe associated with the shapefile can be treated just as any other dataframe. Columns can be added, names can be changed, tables can be joined. 
+
 ```{r attribute table}
 
 cc@data
@@ -131,13 +182,18 @@ cc@data$short = c('USA','MEX')
 
 cc@data
 ```
+
 ***  
 
 ###Raster Data  
 
+Now that we have our boundary area defined by the shapefile, we can start prepping the raster data.
+
 ####Sea Surface Temperature  
 
-In the Data folder, there are 5 *.tif* files with the naming patterm `average_annual_sst_[year].tif`. To create a single average Sea Surface Temperature layer, do the following:  
+In the Data folder, there are 5 `.tif` files with the naming pattern `average_annual_sst_[year].tif`, which are 5 annual average sea surface temperatures for our region (2008-2012). We want just **one** raster file of the average SST over that time period.
+
+To create a single average Sea Surface Temperature layer, do the following:  
 
 **(1) Read in the Sea Surface Temperature data**
 
@@ -150,24 +206,26 @@ sst_files
 
 **(2) Visualize the data before running any calculation or analysis**
 
-As a first step with new data I always recommend plotting it first and getting a sense of the data.  
+Create a raster of the first file by calling `raster()` and then `plot()` to visualize.  
 
-Create a raster of the first file and plot.  
-*Notice the data values are in Kelvin - we will change this to celsius later.*
+
 ```{r raster one sst}
+#This function reads in raster files. Think of it as similar to read.csv()
+r = raster(sst_files[1]) 
 
-r = raster(sst_files[1]) #This function reads in raster files. Think of it as similar to read.csv()
-
-plot(r,col=cols) #remember cols was defined at the beginning to plot values in the spectral color scheme
+#remember cols was defined at the beginning to plot values in the spectral color scheme
+plot(r,col=cols)
 ```
+*Notice the data values are in Kelvin - we will change this to celsius later.*
 
-You can plot rasters or shapefiles ontop of each other, which can be really useful!
+
+You can plot rasters or shapefiles on top of each other
 ```{r plot one sst}
 plot(r,col=cols)
 plot(cc,add=T)
 ```
 
-I also like to look at the distribution of data. Using the `histogram()` function from `rasterVis` is my preference over `hist()` from the base package. Purely because of the visual output.
+I also like to look at the distribution of data. Using the `histogram()` function from `rasterVis` is my preference over `hist()` from the base package purely because of the visual output.
 
 ```{r histogram sst}
 histogram(r)
@@ -176,7 +234,15 @@ histogram(r)
 
 **(3) Calculate average sea surface temperature over the last 5 years**
 
-To get a single layer of average SST in degrees Celsius, first `stack` all layers and then calculate the average temperature per cell.
+To get a single layer of average SST in degrees Celsius we need to first `stack` all layers.
+
+```{r stackImg,echo=F}
+
+img <- readPNG('images/singletomulti.png')
+grid.raster(img)
+
+```
+
 
 ```{r calc avg SST}
 
@@ -186,11 +252,13 @@ sstStack = stack(sst_files)
 plot(sstStack,col=cols)
 ```
 
+
 You can perform operations on a RasterStack by using the `calc()` function from the `raster` package. `calc()` lets you define a function to apply across all layers in the stack.
 
-Here we will take the mean value per cell, and then convert to Celsius by subtracting 273.15.
+Calculate the mean value per cell and then convert to Celsius by subtracting 273.15.
 ```{r calc sst}
-sstAvg = calc(sstStack,fun=function(x){mean(x,na.rm=T)-273.15})#,filename='data/sstAvg.tif') #calculate the average SST in Kelvin then convert to Celsius. By adding 'filename=' R will directly save the raster into the defined file rather than memory
+# By adding 'filename=' R will directly save the raster into the defined file rather than memory
+sstAvg = calc(sstStack,fun=function(x){mean(x,na.rm=T)-273.15})#,filename='data/sstAvg.tif', overwrite=T) 
 
 plot(sstAvg,col=cols);plot(cc,add=T)
 ```
@@ -220,7 +288,7 @@ plot(oaAvg,col=cols)
 
 You'll see that this is in a different projection, extent and cell size from the SST data. It is really obvious when you look at the plot, but the summary above also gives clues as to what projection/resolution/extent this data is in.  
 
-To do any sort of analysis using multiple rasters, they all need to be in the same extent, projection and cell resolution. T
+To do any sort of analysis using multiple rasters, they all need to be in the same extent, projection and cell resolution.
 
 First look at the differences:
 ```{r}
@@ -236,22 +304,32 @@ To get the ocean acidification data in the same format as the SST data, we need 
 
 Use `projectRaster()` from the raster package to reproject a RasterLayer from one projection to another. You will need to define what the new projection should be by setting a coordinate reference system.  
 
-*Note:* Defining a **coordinate reference system (crs)** can be done in many ways. See [Melanie's great cheat sheet](https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf) for more details about Coordinate Reference Systems.  
+Defining a **coordinate reference system (crs)** can be done in many ways. See [Melanie's great cheat sheet](https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf) for more details about Coordinate Reference Systems.  
+
+```{r crs,echo=F}
+
+img <- readPNG('images/crs.png')
+grid.raster(img)
+
+```
+
 
 Here, we want to project from *Mollweide* to *longlat*  
 
 ```{r reproject,warning=FALSE}
 
-oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))#You will see a warning about finite points. I'm not entirely sure what this warning means but I suspect it has to do with warping of some cells when reprojecting. I've googled it and it seems like this is a harmless warning.
+oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))
+
+#You will see a warning about finite points. I'm not entirely sure what this warning means but I suspect it has to do with warping of some cells when reprojecting. I've googled it and it seems like this is a harmless warning.
 
 plot(oa_proj,col=cols)
 ```
 
 **(3) Crop**  
 
-Now that the layer is in the right projection, we need to crop it to our study area. You can set whatever extent you want using `extent()` but for two raster layers to line up, they must have the same extent.  
+Now that the layer is in the right projection, we need to crop it to our study area and make sure all raster layers have the same extent. 
 
-You can use another raster object to define the extent (in this case we will use sstAvg)
+You can set the extent using `extent()`. You can also use another raster object to define the extent (in this case we will use sstAvg)
 
 ```{r crop}
 oa_crop = crop(oa_proj,sstAvg) #crop oa_proj to the extent of sstAvg
@@ -272,7 +350,7 @@ oa_bil = resample(oa_crop,sstAvg,method='bilinear')#,progress='text')
 
 par(mfrow=c(1,2))
 plot(oa_res,col=cols);plot(oa_bil,col=cols)
-#dev.off()  # This turns off the graphic device to stop plotting in 2x1 format
+dev.off()  # This turns off the graphic device to stop plotting in 2x1 format
 ```  
 
   
@@ -289,11 +367,13 @@ plot(oa,col=cols)
 ```
 
 **(5) Check prepped data**  
+
 Check to see that we can use the SST and OA data together now
 ```{r stack data}
 stack(oa,sstAvg) #No error and the stack has two layers so it looks good!
 ```
 
+***
 
 #Analysis   
 
@@ -304,6 +384,7 @@ stack(oa,sstAvg) #No error and the stack has two layers so it looks good!
 The Red Tuna Crab grows best in waters that are **between 12 and 18 degrees Celsius.**  
 
 Remembering that `sstAvg` is our current SST layer, you can eliminate all cells with values outside of your range in a few different ways. 
+
 I prefer to do a simple subset using brackets, but first assigning a new variable so you don't overwrite `sstAvg`
 
 ```{r}
@@ -313,7 +394,7 @@ plot(sstAvg,col=cols);plot(cc,add=T)
 
 #I prefer the following
 
-sstPref = sstAvg
+sstPref = sstAvg #rename variable so we maintain the original sstAvg.
 sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA using brackets to subset
 plot(sstPref,col=cols);plot(cc,add=T)
 ```
@@ -350,7 +431,7 @@ plot(oaBin);plot(cc,add=T)
 ```
 
 
-Now that we have these two binary layers, we can combine them by summing all cells from both layers and those cells with a value equal to 2 will be our viable cells!
+Now that we have these two binary layers, we can combine them by summing all cells from both layers and those cells with a value equal to 2 will be our viable cells.
 
 Multiply the two rasters together using `overlay()` from the raster package and the resulting cells, equal to 1, are the cells that meet both SST and OA requirements
 ```{r}
@@ -383,10 +464,10 @@ This could be all you need - but I want to show some additional steps to highlig
 
 You can remove cells outside of your region by using the `mask()` function. Here, you only want to keep cells that are within the Mexican or US EEZs.
 ```{r mask}
-plot(cells, col=cols);plot(cc,add=T)
+plot(cells, col='lightblue');plot(cc,add=T)
 cellsEEZ = mask(cells,cc)
 
-plot(cellsEEZ);plot(cc,add=T)
+plot(cellsEEZ);plot(cc,add=T,col='lightblue')
 ```
 
 ###Crop to region
@@ -395,7 +476,7 @@ You can then crop your raster to a smaller extent
 ```{r}
 
 cellsCrop = crop(cellsEEZ,extent(-125,-110,25,35)) #setting extent by eyeing it
-plot(cellsCrop);plot(cc,add=T)
+plot(cellsCrop,col='lightblue');plot(cc,add=T)
 ```
 
 ###Draw Extent
@@ -403,7 +484,7 @@ plot(cellsCrop);plot(cc,add=T)
 Another nifty thing - if you don't know the extent, you can draw it and R will tell you! You can then save this extent and crop to it
 ```{r,warning=F,message=F}
 
-plot(cellsEEZ);plot(cc,add=T)
+plot(cellsEEZ,col='lightblue');plot(cc,add=T)
 ext <- drawExtent(show=TRUE,col='red')
 
 #class       : Extent 
@@ -414,7 +495,7 @@ ext <- drawExtent(show=TRUE,col='red')
 
 ext=extent(-126.729,-113.3571,27.48709,35.00825) #I picked this one,
 cropCells=crop(cellsEEZ,ext)
-plot(cropCells);plot(cc,add=T)
+plot(cropCells,col='lightblue');plot(cc,add=T)
 ```
 
 ###Mask out Marine Protected Areas and National Marine Sanctuaries  
@@ -463,7 +544,7 @@ To remove cells in the MPAs and NMS just use the `mask()` function but set `inve
 cellsAQ = mask(cropCells,mpa_c,inverse=T)%>%
             mask(.,nms,inverse=T) #by setting inverse=T, all cells that do not overlap with the mask are kept and those overlapping the mask are set to NA
 
-plot(cellsAQ);plot(cc,add=T)
+plot(cellsAQ,col='lightblue');plot(cc,add=T)
 ```
   
 ###Rasterize & Zonal Stats
@@ -483,7 +564,7 @@ head(cc)
 
 ccZones = rasterize(cc,cellsAQ)#,progress='text')
 ccZones
-plot(ccZones)
+plot(ccZones,col=cols)
 
 ```  
 R automatically assigned 1 and 2 as the cell values. You can set your own values too based on a field or another defined vector of ids.  
@@ -493,7 +574,7 @@ R automatically assigned 1 and 2 as the cell values. You can set your own values
 #using a field from the shapefile
 
 cc_ras_ID = rasterize(cc,cellsAQ,field="ID");cc_ras_ID
-plot(cc_ras_ID)
+plot(cc_ras_ID, col=cols)
 
 ```
 
@@ -504,10 +585,12 @@ To get the total viable area for aquaculture of Red Tuna Crab in the California 
 Since the current values of `prefRas` are all equal to 1, we can simply sum up the number of cells in each EEZ.
 
 ```{r zonal}
+par(mfrow=c(1,2))
+plot(cellsAQ,col='lightblue',main='Suitable Aquaculture Areas');plot(ccZones,col=cols,main='US and Mexico zones')
 
-plot(cellsAQ)
 cellsSum = zonal(cellsAQ,ccZones,fun='sum') #total number of cells since they are all equal to 1
 cellsSum
+dev.off()
 ```
 
 But that isn't as useful as calculating the actual area in km2. Using the `area()` function from the `raster` package you can create a new raster with cell values equal to their area, and then run `zonal()`.  
