@@ -3,10 +3,10 @@ title: "Intro to Spatial Analysis in R"
 author: "Jamie Afflerbach"
 output:
   html_document:
-    toc: true
-    toc_depth: 3
-    toc_float: true
     code_folding: show
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
   pdf_document:
     toc: yes
 ---
@@ -25,11 +25,13 @@ I've drafted this informal introductory session in the form of answering a scien
 
 ```{r ,echo=FALSE,warning=F,message=F}
 
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 library(png)
 library(grid)
 img <- readPNG('./images/seamonkeys.png')
  grid.raster(img)
+ 
+ options(scipen = 999)
 ```
 
 We will answer this question by taking into consideration the following spatial data:  
@@ -51,7 +53,6 @@ Raster or **gridded** data are stored as a grid of value which are rendered on a
 
 
 ```{r ,echo=FALSE}
-library(png)
 img <- readPNG('images/raster_concept.png')
  grid.raster(img)
 ```
@@ -62,8 +63,6 @@ Some examples of raster data include oceanographic datasets such as Sea Surface 
 
 
 ```{r ,echo=FALSE}
-library(png)
-library(grid)
 img <- readPNG('images/examples.png')
  grid.raster(img)
 ```
@@ -91,8 +90,8 @@ There are a lot of spatial packages for R, we will touch on some of them here bu
 * **raster:** Reading, writing, manipulating, analyzing and modeling of gridded spatial data  
 * **rgdal:** Provides the most important and basic spatial functionalities. Provides bindings to Frank Warmerdam’s Geospatial Data Abstraction Library (GDAL) (>= 1.6.3, < 2) and access to projection/transformation operations from the PROJ.4 library   
 * **sp:** provides classes and functions for spatial data   
-* **rgeos:** Interface to Geometry Engine – Open Source (GEOS) using the C API for topology operations on geometries.  
-* **maps:** This package has pre-loaded maps stored which can be added to your map plots. 
+* **rgeos:** Provides spatial vector operations like buffer and intersect. Interface to Geometry Engine – Open Source (GEOS) using the C API for topology operations on geometries.  
+* **maps**: This package has pre-loaded maps stored which can be added to your map plots. 
 * **maptools:** tools for reading and writing spatial data (visualisation)  
 * **ncdf4:** Use with NetCDF files. Note that the `raster` package is also able to read NetCDF files and I prefer to use Raster whenever possible.  
 * **tmap:** ggplot 2 for maps! A new package that gives Arc-like functionality to creating publication ready maps.
@@ -136,7 +135,7 @@ My first step in a spatial analysis is prepping the data, which includes the fol
 ##Shapefiles
 
 
-#### Reading in a shapefile  
+### Load a Shapefile  
 
 Read in a shapefile of the US West Coast and northern Baja peninsula by using `readOGR` from the `rgdal` package.
 
@@ -147,7 +146,7 @@ Read in a shapefile of the US West Coast and northern Baja peninsula by using `r
 cc = readOGR(dsn='data',layer='ca_current')
 ```
 
-#### Plot a Shapefile  
+### Plot a Shapefile  
 
 Plotting a shapefile is just as easy as:
 ```{r plot shp}
@@ -170,7 +169,7 @@ cc
 
 ```
 
-#### Attribute Tables    
+### Attribute Tables    
 
 You can look at the data held within a shapefile by calling `cc@data`. The dataframe associated with the shapefile can be treated just as any other dataframe. Columns can be added, names can be changed, tables can be joined. 
 
@@ -191,13 +190,13 @@ cc@data
 
 Now that we have our boundary area defined by the shapefile, we can start prepping the raster data.
 
-### Sea Surface Temperature  
+**Sea Surface Temperature**
 
 In the Data folder, there are 5 `.tif` files with the naming pattern `average_annual_sst_[year].tif`, which are 5 annual average sea surface temperatures for our region (2008-2012). We want just **one** raster file of the average SST over that time period.
 
 To create a single average Sea Surface Temperature layer, do the following:  
 
-#### Read in the Sea Surface Temperature data  
+### Read in Raster Data  
 
 ```{r sst}
 
@@ -206,7 +205,9 @@ sst_files = list.files('data',pattern='average_',full.names = T) #We need full f
 sst_files
 ```
 
-#### Visualize the data before running any calculation or analysis
+### Visualize 
+
+I like to visualize the raw data before running any calculation or analysis.
 
 Create a raster of the first file by calling `raster()` and then `plot()` to visualize.  
 
@@ -223,7 +224,7 @@ plot(r,col=cols)
 
 You can plot rasters or shapefiles on top of each other
 ```{r plot one sst}
-plot(r,col=cols)
+plot(r,col=cols, main = 'Sea Surface Temperature (K) 2008')
 plot(cc,add=T)
 ```
 
@@ -233,8 +234,7 @@ I also like to look at the distribution of data. Using the `histogram()` functio
 histogram(r)
 ```
 
-
-#### Calculate average sea surface temperature over the last 5 years
+### Stack rasters
 
 To get a single layer of average SST in degrees Celsius we need to first `stack` all layers.
 
@@ -254,6 +254,7 @@ sstStack = stack(sst_files)
 plot(sstStack,col=cols)
 ```
 
+### Raster Calcuations
 
 You can perform operations on a RasterStack by using the `calc()` function from the `raster` package. `calc()` lets you define a function to apply across all layers in the stack.
 
@@ -275,9 +276,9 @@ plot(sstAvg,col=cols, main = 'Mean Sea Surface Temperature (Celsius)');plot(cc,a
 ```
 
 
-### Net Primary Production (NPP)
+**Net Primary Production (NPP)**
 
-#### Read in the NPP raster data    
+#### Read in raster data   
 
 Read in this data the same way as the SST data, using `raster()`. This data is the net primary production (mgC/m2/day).   
 ```{r avg npp}
@@ -307,7 +308,7 @@ To get the primary productivity data in the same format as the SST data, we need
   3. `resample`
   
 
-#### Reproject   
+### Reproject   
 
 Use `projectRaster()` from the raster package to reproject a RasterLayer from one projection to another. You will need to define what the new projection should be by setting a coordinate reference system.  
 
@@ -331,7 +332,7 @@ nppProj = projectRaster(npp,crs = ('+proj=longlat'))
 plot(nppProj,col=cols)
 ```
 
-#### Crop  
+### Crop  
 
 Now that the layer is in the right projection, we need to crop it to our study area and make sure all raster layers have the same extent. 
 
@@ -342,7 +343,7 @@ nppCrop = crop(nppProj,sstAvg) #crop nppProj to the extent of sstAvg
 plot(nppCrop,col=cols);plot(cc,add=T)
 ```
 
-#### Resample    
+### Resample    
 
 Just by plotting both the SST and OA data, you can tell right away that these two datasets have different cell resolutions. The NPP data needs to be resampled to the same cell size as SST in order to do any sort of analysis on these two. Use the *nearest neighbor* method to avoid interpolation between points. We want to keep the data values the same as the original data, but at a higher resolution.  
 
@@ -386,9 +387,9 @@ stack(npp,sstAvg) #No error and the stack has two layers so it looks good!
 Now that our data is prepped and guaranteed to play nicely, we can move onto the fun stuff - **analyzing the data**. For this specific analysis, we need to use the SST and NPP data to find areas within the `cc` region that are suitable for growing seamonkeys. This requires removal of all cells from NPP and SST that are not within the ideal growth parameter range.
 
 
-###Select suitable cells 
+## Reclassify Cells
 
-#### Sea Surface Temperature
+**Sea Surface Temperature**
 
 Remove all cells from the Sea Surface Temperature layer that fall out of the species temperature range
 
@@ -396,54 +397,50 @@ Seamonkeys grow best in waters that are **between 12 and 18 degrees Celsius.**
 
 Remembering that `sstAvg` is our current SST layer, you can eliminate all cells with values outside of your range in a few different ways. 
 
-I prefer to do a simple subset using brackets, but first assigning a new variable so you don't overwrite `sstAvg`
+
+
+A clunky way of getting our suitable cells is by using brackets to get a subset of the cells.
 
 ```{r}
 plot(sstAvg,col=cols);plot(cc,add=T)
 # trying something like this gives you all of the cell values that fit your condition. Not exactly what we want
 #sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
+```
 
-#I prefer the following
-
+You can set all values outside of our range to NA by subsetting - but don't overwrite your original data!
+```{r}
 sstPref = sstAvg #rename variable so we maintain the original sstAvg.
 sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA using brackets to subset
 plot(sstPref,col=cols, main = 'Mean Sea Surface Temperature (Celsius)');plot(cc,add=T)
 ```
 
-#### Net Primary Production
-
-Remove all cells from the Ocean Acidification layer that fall out of the species preferred range 
-
-Our species also prefers water with a mean primary production of **between 2.6 and 3 mgC/m2/day**
-
-```{r}
-plot(npp,col=cols)
-nppPref <- npp
-nppPref[nppPref>3|nppPref<2.6]<-NA
-plot(nppPref,col=cols, main = 'Net Primary Production (mgC/m2/day)'); plot(cc,add=T)
-```
-
-### Change all remaining cell values to 1**
-
-Now that we have our two rasters with suitable parameters, there are a lot of different ways to select overlapping cells. I like to do this in a binary way all suitable cells set equal to 1, the rest NA or 0.  
-
-Set all viable cells in SST to equal 1  
+Repeat the process with a new variable and set all suitable cells in SST to equal 1  
 ```{r}
 sstBin = sstPref            #assigning new variable sstBin (binary) so that sstPref is not overwritten
 sstBin[!is.na(sstBin)]<-1   #setting all cells that are not NA to 1
 plot(sstBin, col='coral', main='Areas with suitable SST');plot(cc,add=T)
 ```
 
-...and same for NPP
-```{r}
+**Net Primary Production**
 
-nppBin = nppPref
-nppBin[!is.na(nppBin)]<-1
+Instead of repeating the same subsetting process we did for SST, we can use `reclassify()` which allows us to define the value for cells that fall in a specific range.
+
+Seamonkeys prefer water with a mean primary production of **between 2.6 and 3 mgC/m2/day**
+
+
+```{r}
+plot(npp,col=cols)
+
+#define your range and the output value within the reclassify() function as the second argument 
+nppBin <- reclassify(npp,c(-Inf,2.6,NA,
+                            2.6,3,1,
+                            3,Inf, NA))
+
 plot(nppBin,col='darkorchid2',main='Areas with Suitable NPP');plot(cc,add=T)
 
 ```
 
-### Combine NPP and SST
+### Combine rasters with overlay()
 
 Now that we have these two binary layers, we can combine them using `overlay()` from the raster package and the resulting cells, equal to 1, are the cells that meet both SST and NPP requirements
 ```{r}
@@ -472,7 +469,7 @@ avg = mean(sstAvg,npp);plot(avg,col=cols)
 This could be all you need - but I want to show some additional steps to highlight more functionality in R.  
   
   
-###Mask  
+### Mask  
 
 You can remove cells outside of your region by using the `mask()` function. Here, you only want to keep cells that are within the Mexican or US EEZs.
 ```{r mask}
@@ -482,7 +479,7 @@ cellsEEZ = mask(cells,cc)
 plot(cellsEEZ,col='lightblue', main = 'Suitable Aquaculture Areas');plot(cc,add=T)
 ```
 
-###Crop to region
+### Crop to region
 
 You can then crop your raster to a smaller extent
 ```{r}
@@ -491,7 +488,7 @@ cellsCrop = crop(cellsEEZ,extent(-125,-110,25,35)) #setting extent by eyeing it
 plot(cellsCrop,col='lightblue',main = 'Suitable Aquaculture Areas');plot(cc,add=T)
 ```
 
-###Draw Extent
+### Draw Extent
 
 Another nifty thing - if you don't know the extent, you can draw it and R will tell you! You can then save this extent and crop to it
 ```{r,warning=F,message=F}
@@ -510,8 +507,8 @@ cropCells=crop(cellsEEZ,ext)
 plot(cropCells,col='lightblue', main = 'Suitable Aquaculture Areas');plot(cc,add=T)
 ```
 
-###Mask out Marine Protected Areas and National Marine Sanctuaries  
-  
+### Remove cells overlapping with polygons
+
 There are two shapefiles in the **data** folder. One is 'MPA_State' which are state MPAs, and one is 'National Marine Sanctuaries'. To go along with the aquaculture analysis, lets say that cells within these regions must be excluded from the suitability analysis.
 
 ```{r mpas,message=F,warning=F}
@@ -559,13 +556,12 @@ cellsAQ = mask(cropCells,mpa_c,inverse=T)%>%
 plot(cellsAQ,col='lightblue', main = 'Suitable Aquaculture Areas');plot(cc,add=T)
 ```
   
-###Rasterize & Zonal Stats
 
 With any raster analysis, you likely aren't just creating a pretty map. Here is an example of running **zonal statistics** on a raster.  
 
 We want to look at the total area (km2) in Mexico and California for seamonkey aquaculture.  
 
-#### Rasterize shapefile
+### Rasterize Shapefile
 
 First you want to turn a shapefile (california current) into a raster of the same projection/extent/resolution as your cells.
 
@@ -590,7 +586,7 @@ plot(cc_ras_ID, col=cols)
 
 ```
 
-#### Run zonal stats
+### Zonal Statistics
 
 To get the total viable area for aquaculture of seamonkeys in the California Current, run `zonal()` using `ccZones`. The `zonal()` function is given any sort of function you define including sum, mean, max, etc.  
 
@@ -605,6 +601,8 @@ cellsSum
 dev.off()
 ```
 
+### Calculate area() per cell
+
 But that isn't as useful as calculating the actual area in km2. Using the `area()` function from the `raster` package you can create a new raster with cell values equal to their area, and then run `zonal()`.  
 
 ```{r area zonal}
@@ -614,4 +612,27 @@ cellsArea = area(cellsAQ,na.rm=T);plot(cellsArea,col=cols, main='Cell area (km2)
 area = zonal(cellsArea,ccZones,fun='sum');area
 ```
 
+**There are `r area[1,2]` km2 of suitable area for seamonkey aquaculture in US waters and `r area[2,2]` km2 in Mexican waters.**
 
+###Playing with the tmap package
+
+```{r}
+#install.packages('tmap')
+
+library('tmap')
+data(World)
+
+extent(cellsAQ)<-extent(cc)
+
+
+tm_shape(cellsAQ)+
+  tm_raster(title='Suitable Area')+
+tm_shape(cc)+  
+  tm_borders()+
+tm_shape(World)+
+  tm_fill(col = 'beige')+
+tm_shape(World)+
+  tm_borders()
+
+
+```
