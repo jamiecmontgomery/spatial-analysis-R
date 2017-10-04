@@ -116,7 +116,7 @@ Spatial data visualization packages
 * **mapview:** provides functions to create interactive visualisations of spatial data.
 
 
-Load all libraries:
+Load all libraries. If you do not have all of these libraries installed, use `install.packages()` to load them.
 
 ```{r libraries}
 
@@ -125,7 +125,7 @@ library(raster)       #Main raster library with nearly all functions used in thi
 library(rgdal)        #Spatial library - most functions used from rgdal are for vectors (shapefiles)
 library(dplyr)        #NOT spatial - this is a data wrangling library
 
-#devtools::install_github("ecohealthalliance/fasterize")
+#devtools::install_github("ecohealthalliance/fasterize")  #to install fasterize you need to run this line
 library(fasterize)
 library(ggplot2)
 
@@ -165,7 +165,7 @@ To create a single average Sea Surface Temperature layer, do the following:
 
 ```{r sst}
 
-sst_files = list.files('data',pattern='average_',full.names = T) #We need full file paths
+sst_files = list.files('rasters', pattern='average_', full.names = T) #We need full file paths
 
 sst_files
 ```
