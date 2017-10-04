@@ -127,6 +127,7 @@ library(dplyr)        #NOT spatial - this is a data wrangling library
 
 #devtools::install_github("ecohealthalliance/fasterize")  #to install fasterize you need to run this line
 library(fasterize)
+#devtools::install_github("tidyverse/ggplot2")
 library(ggplot2)
 
 ```  
