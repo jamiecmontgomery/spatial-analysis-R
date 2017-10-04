@@ -277,7 +277,7 @@ system.time(west_shp_rgdal &lt;- readOGR(dsn=&quot;shapefiles&quot;, layer=&quot
 ## with 5 features
 ## It has 3 fields</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.220   0.008   0.226</code></pre>
+##   0.240   0.004   0.242</code></pre>
 <pre class="r"><code>object.size(west_shp_rgdal)</code></pre>
 <pre><code>## 1142592 bytes</code></pre>
 <pre class="r"><code>plot(west_shp_rgdal)</code></pre>
@@ -292,7 +292,7 @@ system.time(west_shp_sf &lt;- st_read(dsn = &quot;shapefiles&quot;, layer=&quot;
 ## epsg (SRID):    4326
 ## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.032   0.000   0.034</code></pre>
+##   0.040   0.000   0.039</code></pre>
 <pre class="r"><code>object.size(west_shp_sf)</code></pre>
 <pre><code>## 887712 bytes</code></pre>
 <pre class="r"><code>plot(west_shp_sf)      </code></pre>
@@ -409,8 +409,9 @@ sf</code></pre>
 <div id="save" class="section level1">
 <h1>Save</h1>
 <p>Save the spatial object to disk using <code>st_write()</code> and specifying the filename as well as the <a href="http://www.gdal.org/ogr_formats.html">driver</a>.</p>
-<pre class="r"><code>st_write(sf_out, &quot;shapefiles/wc_regions_clean.shp&quot;, driver = &quot;ESRI Shapefile&quot;)</code></pre>
-<pre><code>## Writing layer `wc_regions_clean' to data source `shapefiles/wc_regions_clean.shp' using driver `ESRI Shapefile'
+<pre class="r"><code>st_write(sf_out, &quot;shapefiles/wc_regions_clean.shp&quot;, driver = &quot;ESRI Shapefile&quot;, delete_layer = TRUE)</code></pre>
+<pre><code>## Deleting layer `wc_regions_clean' using driver `ESRI Shapefile'
+## Writing layer `wc_regions_clean' to data source `/home/afflerbach/github/spatial-analysis-R/shapefiles/wc_regions_clean.shp' using driver `ESRI Shapefile'
 ## features:       5
 ## fields:         5
 ## geometry type:  Multi Polygon</code></pre>

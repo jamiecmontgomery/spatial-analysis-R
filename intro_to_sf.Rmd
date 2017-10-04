@@ -139,7 +139,7 @@ Save the spatial object to disk using `st_write()` and specifying the filename a
 
 ```{r plot}
 
-st_write(sf_out, "shapefiles/wc_regions_clean.shp", driver = "ESRI Shapefile")
+st_write(sf_out, "shapefiles/wc_regions_clean.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
 
 ```
 
