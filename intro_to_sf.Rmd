@@ -215,9 +215,9 @@ full_rgn <- st_union(sf_out) %>%
 
 There is a lot more functionality to `sf` including the ability to `intersect` polygons, calculate `distance`, create a `buffer`, and more. Here are some more great resources and tutorials for a deeper dive into this great package:
 
-https://cdn.rawgit.com/rhodyrstats/geospatial_with_sf/bc2b17cf/geospatial_with_sf.html
-https://cdn.rawgit.com/Nowosad/Intro_to_spatial_analysis/05676e29/Intro_to_spatial_analysis.html#1
-https://github.com/r-spatial/sf
-http://strimas.com/r/tidy-sf/
-https://rud.is/b/2017/09/18/mapping-fall-foliage-with-sf/
+[Spatial analysis in R with the sf package](https://cdn.rawgit.com/rhodyrstats/geospatial_with_sf/bc2b17cf/geospatial_with_sf.html)  
+[Intro to Spatial Analysis](https://cdn.rawgit.com/Nowosad/Intro_to_spatial_analysis/05676e29/Intro_to_spatial_analysis.html#1)  
+[sf github repo](https://github.com/r-spatial/sf)    
+[Tidy spatial data in R: using dplyr, tidyr, and ggplot2 with sf](http://strimas.com/r/tidy-sf/)    
+[mapping-fall-foliage-with-sf](https://rud.is/b/2017/09/18/mapping-fall-foliage-with-sf/)    
 
