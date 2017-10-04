@@ -31,7 +31,7 @@ library(sf)
 library(rgdal)
 #install.packages('dplyr')
 library(dplyr)
-#install.packages('ggplot2')
+#devtools::install_github("tidyverse/ggplot2")
 library(ggplot2)
 ```
 

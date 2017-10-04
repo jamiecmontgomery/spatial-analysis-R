@@ -277,7 +277,7 @@ system.time(west_shp_rgdal &lt;- readOGR(dsn=&quot;shapefiles&quot;, layer=&quot
 ## with 5 features
 ## It has 3 fields</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.188   0.000   0.188</code></pre>
+##   0.236   0.004   0.242</code></pre>
 <pre class="r"><code>object.size(west_shp_rgdal)</code></pre>
 <pre><code>## 1142592 bytes</code></pre>
 <pre class="r"><code>plot(west_shp_rgdal)</code></pre>
@@ -292,7 +292,7 @@ system.time(west_shp_sf &lt;- st_read(dsn = &quot;shapefiles&quot;, layer=&quot;
 ## epsg (SRID):    4326
 ## proj4string:    +proj=longlat +datum=WGS84 +no_defs</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.040   0.000   0.037</code></pre>
+##   0.032   0.000   0.035</code></pre>
 <pre class="r"><code>object.size(west_shp_sf)</code></pre>
 <pre><code>## 887712 bytes</code></pre>
 <pre class="r"><code>plot(west_shp_sf)      </code></pre>
