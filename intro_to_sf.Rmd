@@ -145,7 +145,7 @@ st_write(sf_out, "shapefiles/wc_regions_clean.shp", driver = "ESRI Shapefile", d
 
 ```
 
-# Visualize with gglot
+# Visualize with ggplot
 
 `ggplot2` now has integrated functionality to plot sf objects using `geom_sf()`.
 
