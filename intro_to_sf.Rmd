@@ -27,8 +27,14 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 #install.packages('sf')
 library(sf)
+#install.packages('rgdal')
 library(rgdal)
+#install.packages('dplyr')
+library(dplyr)
+#install.packages('ggplot2')
+library(ggplot2)
 ```
+
 
 The **sf** package is an R implementation of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features). This package incorporates:  
 
@@ -89,10 +95,6 @@ ncol(west_shp_sf)
 
 It also easy to use the **dplyr** package on `sf` objects:
 
-```{r}
-library(dplyr)
-```
-
 `select()`
 
 ```{r select}
@@ -143,12 +145,11 @@ st_write(sf_out, "shapefiles/wc_regions_clean.shp", driver = "ESRI Shapefile", d
 
 ```
 
-# plot
+# Visualize with gglot
 
 `ggplot2` now has integrated functionality to plot sf objects using `geom_sf()`.
 
 ```{r}
-library(ggplot2)
 
 #simplest plot
 ggplot(sf_out) +
@@ -184,7 +185,9 @@ ggplot(sf_out) +
   scale_fill_distiller(palette = "Blues", direction=1) #direction can be used to reverse the color palette scale
 ```
 
-# Combine & Union
+# Union
+
+You can merge all polygons into one using `st_union()`. This creates an af
 
 ```{r st_union}
 
@@ -192,13 +195,24 @@ full_rgn  <- st_union(sf_out)
 
 plot(full_rgn)
 
-#turn into sf for ggplot
+#try plotting with ggplot2
 
-# ggplot(full_rgn) +
-#   geom_sf()
+ # ggplot(full_rgn) +
+ #   geom_sf()
 ```
+
+This doesn't work because now the object is a single geometry object of class `sfc` which is not a data.frame that ggplot requires for plotting. To turn an `sfc` object back into an `sf` object use `st_sf()`.
+
+```{r st_sf}
+
+full_rgn <- st_union(sf_out) %>%
+            st_sf(geometry = .)
+
+ ggplot(full_rgn) +
+   geom_sf()
 ```
-```
+
+
 There is a lot more functionality to `sf` including the ability to `intersect` polygons, calculate `distance`, create a `buffer`, and more. Here are some more great resources and tutorials for a deeper dive into this great package:
 
 https://cdn.rawgit.com/rhodyrstats/geospatial_with_sf/bc2b17cf/geospatial_with_sf.html
