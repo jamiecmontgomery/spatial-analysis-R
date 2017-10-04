@@ -2,7 +2,8 @@
 
 ### Jamie Afflerbach
 
-Click here for the tutorial on 
+Click on the links below for the tutorials on:
+
 - [sf](https://cdn.rawgit.com/jafflerbach/spatial-analysis-R/gh-pages/intro_to_sf.html)
 - [raster analysis](https://cdn.rawgit.com/jafflerbach/spatial-analysis-R/gh-pages/intro_spatial_data_R.html)
 
