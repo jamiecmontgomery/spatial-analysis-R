@@ -160,40 +160,38 @@ plot(wc_rgns[1])
 
 In the `data` folder, there are 5 `.tif` files with the naming pattern `average_annual_sst_[year].tif`, which are 5 annual average sea surface temperatures for our region (2008-2012). We want just **one** raster file of the average SST over that time period.
 
-To create a single average Sea Surface Temperature layer, do the following:  
-
-### Read in raster data  
-
-```{r sst}
-
-sst_files = list.files('rasters', pattern='average_', full.names = T) #We need full file paths
-
-sst_files
-```
-
 ### Visualize 
 
 I like to visualize the raw data before running any calculation or analysis.
 
 Create a raster of the first file by calling `raster()` and then `plot()` to visualize.  
 
+```{r single_sst_layer}
 
-```{r raster one sst}
-#This function reads in raster files. Think of it as similar to read.csv()
-r = raster(sst_files[1]) 
+r <- raster("rasters/average_annual_sst_2008.tif")
 
-#remember cols was defined at the beginning to plot values in the spectral color scheme
 plot(r)
 ```
 <br>
 *Notice the data values are in Kelvin - we will change this to celsius later.*
-
 
 I also like to look at the distribution of data using `hist()`
 
 ```{r histogram sst}
 hist(r)
 ```
+
+
+### Read in raster data
+
+We want to read in all five Sea Surface Temperature files. I like to do this by first listing all the files with `list.files()`. 
+
+```{r sst}
+sst_files = list.files('rasters', pattern='average_', full.names = T) #We need full file paths
+
+sst_files
+```
+
 
 ### Stack rasters
 
@@ -224,7 +222,7 @@ Calculate the mean value per cell and then convert to Celsius by subtracting 273
 ```{r calc sst}
 
 # By adding 'filename=' R will directly save the raster into the defined file rather than memory
-sstAvg = calc(sstStack, fun=function(x){mean(x, na.rm=T)-273.15})#,filename='rasters/sstAvg.tif', overwrite=T) 
+sstAvg = raster::calc(sstStack, fun=function(x){mean(x, na.rm=T)-273.15})#,filename='rasters/sstAvg.tif', overwrite=T) 
 
 plot(sstAvg, main = 'Mean Sea Surface Temperature (Celsius)')
 
@@ -234,7 +232,7 @@ A more compact way of doing multiple raster analysis is by using pipes...you can
 ```{r pipes sst}
 
 sstAvg = stack(sst_files)%>%
-          calc(., fun=function(x){mean(x, na.rm=T)-273.15})
+          raster::calc(., fun=function(x){mean(x, na.rm=T)-273.15})
 
 plot(sstAvg, main = 'Mean Sea Surface Temperature (Celsius)')
 ```
@@ -360,38 +358,25 @@ Lumpsucker fish grow best in waters that are **between 12 and 18 degrees Celsius
 
 Remembering that `sstAvg` is our current SST layer, you can eliminate all cells with values outside of your range in a few different ways. 
 
+Let's take a look again at our SST data layer.
 ```{r}
 plot(sstAvg)
-# trying something like this gives you all of the cell values that fit your condition. Not exactly what we want
-#sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
 ```
 
+We want to set all cell values outside of our preferred range to be equal to `NA`. We can do this by using `raster::reclassify()`. I'm creating a new object called `sstPref` (preferred sst cells). The `reclassify()` function takes the raster layer as it's first argument, and then a reclassification matrix which must have 3 columns with the third column indicating the new cell value. The way this is written, I've stated that all cells with values from `-Inf` to 12 will be assigned an `NA`, all cells between 12 and 18 will be assigned a value of **1** and any greater than 18 will be reclassified to `NA`.
 
-A clunky way of getting our suitable cells is by using brackets to get a subset of the cells.
+```{r sst_reclassify}
+sstPref <- reclassify(sstAvg, c(-Inf, 12, NA,  
+                                12, 18, 1,
+                                18, Inf, NA))
 
-You can set all values outside of our range to NA by subsetting - but don't overwrite your original data!
-```{r}
-
-sstPref = sstAvg #rename variable so we maintain the original sstAvg.
-sstPref[sstPref < 12 | sstPref > 18] <- NA #set all cells outside of our range to NA using brackets to subset
 plot(sstPref, main = 'Mean Sea Surface Temperature (Celsius)')
-
 ```
 
-Repeat the process with a new variable and set all suitable cells in SST to equal 1  
-```{r}
-
-sstPref[!is.na(sstPref)] <- 1   #setting all cells that are not NA to 1
-plot(sstPref, col='coral', main = 'Areas with suitable SST')
-
-```
 
 **Net Primary Production**
 
-Instead of repeating the same subsetting process we did for SST, we can use `reclassify()` which allows us to define the value for cells that fall in a specific range.
-
-Lumpsucker fish prefer water with a mean primary production of **between 2.6 and 3 mgC/m2/day**
-
+We can do the same with the Net Primary Production data. Lumpsucker fish prefer water with a mean primary production of **between 2.6 and 3 mgC/m2/day**
 
 ```{r}
 
@@ -437,15 +422,20 @@ This could be all you need - but I want to show some additional steps to highlig
   
 ### Mask  
 
-You can remove cells outside of your region by using the `mask()` function. Here, you only want to keep cells that are within the Mexican or US EEZs.
+You can remove cells outside of your region by using the `mask()` function. Here, you only want to keep cells that are within the Mexican or US EEZs. The `mask()` function takes the raster you're looking to remove cells from as it's first argument, then either another *raster* or a *spatial* object as the object used to mask out cells. Here we will use the West Coast shapefile as our mask (I also think of this as a cookie cutter, removing pieces outside of the shapefile boundary).
+
 ```{r mask}
 plot(cells, col='lightblue')
+```
 
+The `raster` package does not yet play nicely with Simple Features, so we need to convert the shapefile, `wc_rgns` into a **SpatialPolygonsDataFrame** using the function `as()`. Then we can feed this shapefile into the `mask()` function.
+
+```{r}
 wc_rgns_sp <- as(wc_rgns, 'Spatial');plot(wc_rgns_sp)
 
 cellsEEZ = mask(cells, wc_rgns_sp)
 
-plot(cellsEEZ,col='lightblue', main = 'Suitable Aquaculture Areas');plot(wc_rgns,add=T)
+plot(cellsEEZ, col='lightblue', main = 'Suitable Aquaculture Areas');plot(wc_rgns, add = T)
 ```
 
 ### Crop to region
@@ -459,25 +449,24 @@ plot(cellsCrop,col='lightblue', main = 'Suitable Aquaculture Areas');plot(wc_rgn
 ```
 
   
-
 With any raster analysis, you likely aren't just creating a pretty map. Here is an example of running **zonal statistics** on a raster.  
 
 We want to look at the total area (km2) in each region that is suitable for Lumpsucker aquaculture.  
 
 ### Rasterize Shapefile
 
-First we need to turn the shapefile of our region into a raster of the same projection/extent/resolution as your cells. It will need to be a 'SpatialPolygonsDataFrame'
+First we need to turn the shapefile of our region into a raster of the same projection/extent/resolution as your cells. Again, we will need to use the **SpatialPolygonsDataFrame**.
 
 
 ```{r rasterize}
 
-#let's take a look at what the West Coast  dataframe looks like again
-head(wc_rgns)
+#let's take a look at what the West Coast dataframe looks like again
+head(wc_rgns_sp)
 
 #
 wcZones <- fasterize(wc_rgns, cellsEEZ, field = "rgn_id")#,progress='text')
 wcZones
-plot(wcZones, main='Shapefile rasterized into zones')
+plot(wcZones, main = 'Shapefile rasterized into zones')
 
 ```  
 
@@ -488,7 +477,8 @@ To get the total viable area for aquaculture along the West Coast, run `zonal()`
 Since the current values of `prefRas` are all equal to 1, we can simply sum up the number of cells in each EEZ.
 
 ```{r zonal}
-par(mfrow=c(1, 2))
+par(mfrow = c(1, 2))
+
 plot(cellsEEZ, col='lightblue', main='Suitable Aquaculture Areas');plot(wcZones, main='US West Coast zones')
 
 cellsSum = zonal(cellsEEZ, wcZones, fun='sum') #total number of cells since they are all equal to 1
