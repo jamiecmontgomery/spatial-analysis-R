@@ -87,17 +87,21 @@ class(ak_shp_sf)
 
 ## Coordinate Reference System
 
-Every `sf` object needs a coordinate reference system (or crs) defined in order to work with it correctly. You can view what `crs` is set by using the function `st_crs`
+Every `sf` object needs a coordinate reference system (or `crs`) defined in order to work with it correctly. A coordinate reference system contains both a datum and a projection. The datum is how you georeference your points (in 3 dimensions!) onto a spheroid. The projection is how these points are mathematically transformed to represent the georeferenced point on a flat piece of paper. All coordinate reference systems require a datum. However, some coordinate reference systems are "unprojected" (also called geographic coordinate systems). Coordinates in latitude/longitude use a geographic (unprojected) coordinate system. One of the most commonly used geographic coordinate systems is WGS 1984.
+
+You can view what `crs` is set by using the function `st_crs`
 
 ```{r}
 st_crs(ak_shp_sf)
 ```
 
-CRS definition strings can be really confusing! One convenient way to reference them quickly is the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
+This is pretty confusing looking. Withinout getting into the details, that long string says that this data is projected in an Alaska Albers projection with a NAD83 datum. A more convenient way to reference `crs` quickly is by using the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
 
-The string above (even though there is no EPSG code) is actually referencing the Alaska Albers projection. This projection has the EPSG code 3338.
+Even though it is not listed above, the Alaska Albers projection has an EPSG code 3338.
 
-The `st_transform` function will transform coordinates. Say we want our coordinates as an unprojected WGS84 datum, the EPSG code [4326](http://spatialreference.org/ref/epsg/4326/) will be best for this, so let's transform our coordinate system to this.
+You will often need to transform your geospatial data from one coordiante system to another. The `st_transform` function does this quickly for us.
+
+For this dataset, we want our coordinates as an unprojected WGS84 datum. The EPSG code [4326](http://spatialreference.org/ref/epsg/4326/) is the most commonly used geographic coordinate system, so let's use it.
 
 
 ```{r}
@@ -157,7 +161,7 @@ pop <- read.csv("shapefiles/alaska_poulation.csv")
 
 ```
 
-The `st_join` function is a spatial left or inner join. The arguments for both the left and right tables are objects of class `sf` which means we will first need to turn our population `data.frame` with latitude and longitude coordinates into an `sf` object. 
+The `st_join` function is a spatial left join. The arguments for both the left and right tables are objects of class `sf` which means we will first need to turn our population `data.frame` with latitude and longitude coordinates into an `sf` object. 
 
 We can do this easily using the `st_as_sf` function, which takes as arguments the coordinates and the `crs`. The `remove = F` specification here ensures that when we create our `geometry` column, we retain our original `lat` `lng` columns, which we will need later for plotting.
 
@@ -171,7 +175,9 @@ head(pop_sf)
 
 ```
 
-Now we can do our spatial join!
+Now we can do our spatial join! You can specify what geometry function the join uses (`st_intersects`, `st_within`, `st_crosses`, `st_is_within_distance`, ...) in the `join` argument. The geometry function you use will depend on what kind of operation you want to do, and the geometries of your shapefiles.
+
+In this case, we want to find what region each city falls within, so we will use `st_within`.
 
 ```{r}
 pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
@@ -179,18 +185,22 @@ pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
 head(pop_joined_sf)
 ```
 
-Next we compute the total population for each region
+Next we compute the total population for each region.
 
 ```{r}
 pop_region <- pop_joined_sf %>% 
   group_by(region) %>% 
   summarise(total_pop = sum(population))
+
+head(pop_region)
 ```
 
-And use a regular `left_join` to get the information back to the Alaska region shapefile. 
+And use a regular `left_join` to get the information back to the Alaska region shapefile. Note that we need this step in order to retain our region geometries so that we can make some maps.
 
 ```{r}
 ak_pop_sf <- left_join(ak_shp_sf, pop_region)
+
+head(ak_pop_sf)
 ```
 
 # Save
@@ -215,7 +225,7 @@ ggplot(ak_pop_sf) +
 
 ```
 
-Woah this looks bad!! Remember when we transformed our data from the Alaska Albers projection to an unprojected dataset? Turns out that a projection might be useful here. Let's create a new object with the Alaska Albers projection for a better display.
+Woah this looks bad!! This is where our original Alaska Albers projection might make things look a lot better. Let's create a new object with the Alaska Albers projection for a better display.
 
 ```{r}
 ak_pop_sf_aa <- ak_pop_sf %>% st_transform(crs = 3338)
@@ -246,7 +256,7 @@ ggplot(ak_pop_sf_aa) +
 
 We can also make an interactive map using `leaflet`. 
 
-Leaflet (unlike ggplot) will re-project data for you if you give it a projection. The catch is that you have to give it both a projection to project to (like Alaska Albers), and that the coordinates of your shapefile must be referenced the WGS84 datum, and unprojected. This means that we need to use our shapefile with the 4326 EPSG code. Remember you can always check what `crs` you have set using `st_crs`.
+Leaflet (unlike ggplot) will project data for you. The catch is that you have to give it both a projection (like Alaska Albers), and that your shapefile must use a geographic coordinate system. This means that we need to use our shapefile with the 4326 EPSG code. Remember you can always check what `crs` you have set using `st_crs`.
 
 Here we define a leaflet projection for Alaska Albers, and save it as a variable to use later.
 
@@ -258,15 +268,13 @@ epsg3338 <- leaflet::leafletCRS(
   resolutions = 2^(16:7))
 ```
 
-You'll notice that the leaflet projection information looks a lot like the crs information from our shapefile that is in Alaska Albers!
+You might notice that this looks familiar! The syntax is a bit different, but most of this information is also contained within the `crs` of our Alaska Albers projected shapefile:
 
 ```{r}
 st_crs(ak_pop_sf_aa)
 ```
 
-
-
-Here is a simple map:
+Let's make a simple map using this projection.
 
 ```{r}
 m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
@@ -277,7 +285,7 @@ m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
 m
 ```
 
-A slightly more complex one:
+We can add labels, legends, and a color scale.
 
 ```{r}
 pal <- colorNumeric(palette = "Reds", domain = ak_pop_sf$total_pop)
@@ -299,7 +307,7 @@ m
 ```
 
 
-Even more bells and whistles!
+We can also add the individual communities, with popup labels showing their population, on top of that!
 
 ```{r}
 pal <- colorNumeric(palette = "Reds", domain = ak_pop_sf$total_pop)
