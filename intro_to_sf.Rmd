@@ -95,11 +95,11 @@ You can view what `crs` is set by using the function `st_crs`
 st_crs(ak_shp_sf)
 ```
 
-This is pretty confusing looking. Withinout getting into the details, that long string says that this data is projected in an Alaska Albers projection with a NAD83 datum. A more convenient way to reference `crs` quickly is by using the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
+This is pretty confusing looking. Without getting into the details, that long string says that this data is projected in an Alaska Albers projection with a NAD83 datum. A more convenient way to reference `crs` quickly is by using the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
 
 Even though it is not listed above, the Alaska Albers projection has an EPSG code 3338.
 
-You will often need to transform your geospatial data from one coordiante system to another. The `st_transform` function does this quickly for us.
+You will often need to transform your geospatial data from one coordinate system to another. The `st_transform` function does this quickly for us.
 
 For this dataset, we want our coordinates as an unprojected WGS84 datum. The EPSG code [4326](http://spatialreference.org/ref/epsg/4326/) is the most commonly used geographic coordinate system, so let's use it.
 
