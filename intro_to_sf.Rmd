@@ -126,26 +126,22 @@ nrow(ak_shp_sf)
 ncol(ak_shp_sf)
 ```
 
-## sf & dplyr
+## `sf` & the Tidyverse
 
-It's easy to use the **dplyr** package on `sf` objects, just like you would a `data.frame`. Here are a couple of simple examples:
+Since `sf` objects are dataframes, they play nicely with packages in the tidyverse. Here are a couple of simple examples:
 
 `select()`
 
 ```{r select}
-
 ak_shp_sf %>%
   select(region, geometry)
-
 ```
 
 `filter()`
 
 ```{r filter}
-
 ak_shp_sf %>%
   filter(region == "Southeast")
-
 ```
 
 
@@ -162,8 +158,7 @@ We have some population data, but it gives the number of people by city, not by 
 First, read in the population data as a regular `data.frame`.
 
 ```{r}
-pop <- read.csv("shapefiles/alaska_poulation.csv")
-
+pop <- read.csv("shapefiles/alaska_population.csv")
 ```
 
 The `st_join` function is a spatial left join. The arguments for both the left and right tables are objects of class `sf` which means we will first need to turn our population `data.frame` with latitude and longitude coordinates into an `sf` object. 
@@ -177,7 +172,6 @@ pop_sf <- st_as_sf(pop,
                   remove = F)
 
 head(pop_sf)
-
 ```
 
 Now we can do our spatial join! You can specify what geometry function the join uses (`st_intersects`, `st_within`, `st_crosses`, `st_is_within_distance`, ...) in the `join` argument. The geometry function you use will depend on what kind of operation you want to do, and the geometries of your shapefiles.
@@ -188,14 +182,17 @@ In this case, we want to find what region each city falls within, so we will use
 pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
 
 head(pop_joined_sf)
+
+plot(pop_joined_sf[5])
 ```
 
-Next we compute the total population for each region.
+Next we compute the total population for each region and drop the geometry because we are only looking for the data at this point. We will join this data to the AK regions shapefile next.
 
 ```{r}
 pop_region <- pop_joined_sf %>% 
   group_by(region) %>% 
-  summarise(total_pop = sum(population))
+  summarise(total_pop = sum(population)) %>%
+  st_set_geometry(NULL)
 
 head(pop_region)
 ```
@@ -206,6 +203,9 @@ And use a regular `left_join` to get the information back to the Alaska region s
 ak_pop_sf <- left_join(ak_shp_sf, pop_region)
 
 head(ak_pop_sf)
+
+#plot to check
+plot(ak_pop_sf[3])
 ```
 
 # Save
@@ -213,9 +213,7 @@ head(ak_pop_sf)
 Save the spatial object to disk using `st_write()` and specifying the filename as well as the [driver](http://www.gdal.org/ogr_formats.html).
 
 ```{r plot}
-
 st_write(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
-
 ```
 
 # Visualize with ggplot
@@ -223,11 +221,9 @@ st_write(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shape
 `ggplot2` now has integrated functionality to plot sf objects using `geom_sf()`.
 
 ```{r}
-
 #simplest plot
 ggplot(ak_pop_sf) +
   geom_sf()
-
 ```
 
 Woah this looks bad!! This is where our original Alaska Albers projection might make things look a lot better. Let's create a new object with the Alaska Albers projection for a better display.
@@ -237,7 +233,6 @@ ak_pop_sf_aa <- ak_pop_sf %>% st_transform(crs = 3338)
 
 ggplot(ak_pop_sf_aa) +
   geom_sf()
-
 ```
 
 This is useful to make sure your file looks correct but doesn't display any information about the data. We can plot these regions and fill each polygon based on the population
