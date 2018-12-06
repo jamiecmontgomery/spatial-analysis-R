@@ -183,10 +183,10 @@ pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
 
 head(pop_joined_sf)
 
-plot(pop_joined_sf[5])
+plot(pop_joined_sf["region"])
 ```
 
-Next we compute the total population for each region and drop the geometry because we are only looking for the data at this point. We will join this data to the AK regions shapefile next.
+Next we compute the total population for each region and drop the geometry because we are only looking for the data without a geospatial reference at this point. We will join this data to the AK regions shapefile next.
 
 ```{r}
 pop_region <- pop_joined_sf %>% 
