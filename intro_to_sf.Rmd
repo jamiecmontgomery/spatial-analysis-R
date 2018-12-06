@@ -22,7 +22,7 @@ From the [**sf**](https://r-spatial.github.io/sf/articles/sf1.html) vignette:
 > R has well-supported classes for storing spatial data (sp) and interfacing to the above mentioned environments (rgdal, rgeos), but has so far lacked a complete implementation of simple features, making conversions at times convoluted, inefficient or incomplete. The package sf tries to fill this gap, and aims at succeeding sp in the long term.
 
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning = F, message = F}
 knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 # install.packages('sf')
@@ -53,7 +53,7 @@ Most of the functions in this package starts with prefix `st_` which stands for 
 
 If you've used `readOGR()` from the `rgdal` package, you'll notice the similarities in arguments for the `st_read()` function. We'll do a quick comparison of the two functions here.
 
-Read in a shapefile of the US West Coast using `readOGR()` from the `rgdal` package, and `st_read` from the `sf` package.
+Read in a shapefile of Alaska using `readOGR()` from the `rgdal` package, and `st_read` from the `sf` package.
 
 * `dsn` is the path name  
 * `layer` is the name of the file  
@@ -110,6 +110,11 @@ ak_shp_sf <- ak_shp_sf %>%
 
 st_crs(ak_shp_sf)
 ```
+
+```{r}
+plot(ak_shp_sf)
+```
+
 
 # Attributes
 
