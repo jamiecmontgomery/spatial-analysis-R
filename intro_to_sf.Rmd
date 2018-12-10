@@ -205,7 +205,7 @@ ak_pop_sf <- left_join(ak_shp_sf, pop_region)
 head(ak_pop_sf)
 
 #plot to check
-plot(ak_pop_sf[3])
+plot(ak_pop_sf["total_pop"])
 ```
 
 # Save
