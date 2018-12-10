@@ -74,7 +74,6 @@ plot(ak_shp_rgdal)
 system.time(ak_shp_sf <- st_read(dsn = "shapefiles", layer="ak_regions")) 
 object.size(ak_shp_sf)
 plot(ak_shp_sf)  
-
 ```
 
 
@@ -96,18 +95,14 @@ You can view what `crs` is set by using the function `st_crs`
 st_crs(ak_shp_sf)
 ```
 
-This is pretty confusing looking. Without getting into the details, that long string says that this data is projected in an Alaska Albers projection with a NAD83 datum. A more convenient way to reference `crs` quickly is by using the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
+This is pretty confusing looking. Without getting into the details, that long string says that this data has a greographic coordinate system (WGS84) with no projection. A convenient way to reference `crs` quickly is by using the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
 
-Even though it is not listed above, the Alaska Albers projection has an EPSG code 3338.
-
-You will often need to transform your geospatial data from one coordinate system to another. The `st_transform` function does this quickly for us.
-
-For this dataset, we want our coordinates as an unprojected WGS84 datum. The EPSG code [4326](http://spatialreference.org/ref/epsg/4326/) is the most commonly used geographic coordinate system, so let's use it.
+You will often need to transform your geospatial data from one coordinate system to another. The `st_transform` function does this quickly for us. You may have noticed the maps above looked wonky because of the dateline. We might want to set a different projection for this data so it plots nicer. A good one for Alaska is called the Alaska Albers projection, with an EPSG code of [3338](http://spatialreference.org/ref/epsg/3338/).
 
 
 ```{r}
 ak_shp_sf <- ak_shp_sf %>%
-  st_transform(crs = 4326)
+  st_transform(crs = 3338)
 
 st_crs(ak_shp_sf)
 ```
@@ -116,6 +111,7 @@ st_crs(ak_shp_sf)
 plot(ak_shp_sf)
 ```
 
+Much better!
 
 # Attributes
 
@@ -154,6 +150,7 @@ You can also use the `sf` package to create spatial joins, useful for when you w
 
 We have some population data, but it gives the number of people by city, not by region. To determine the number of people per region we will need to:
 
++ read in the city data from a csv and turn it into an `sf` object
 + use a spatial join (`st_join`) to assign each city to a region
 + use `group_by` and `summarize` to calculate the total population by region
 
@@ -166,7 +163,7 @@ pop <- read.csv("shapefiles/alaska_population.csv")
 
 The `st_join` function is a spatial left join. The arguments for both the left and right tables are objects of class `sf` which means we will first need to turn our population `data.frame` with latitude and longitude coordinates into an `sf` object. 
 
-We can do this easily using the `st_as_sf` function, which takes as arguments the coordinates and the `crs`. The `remove = F` specification here ensures that when we create our `geometry` column, we retain our original `lat` `lng` columns, which we will need later for plotting.
+We can do this easily using the `st_as_sf` function, which takes as arguments the coordinates and the `crs`. The `remove = F` specification here ensures that when we create our `geometry` column, we retain our original `lat` `lng` columns, which we will need later for plotting. Although it isn't said anywhere explicitly in the file, let's assume that the coordinate system used to reference the latitude longitude coordinates is WGS84, which has a `crs` number of 4236.
 
 ```{r}
 pop_sf <- st_as_sf(pop, 
@@ -181,11 +178,26 @@ Now we can do our spatial join! You can specify what geometry function the join 
 
 In this case, we want to find what region each city falls within, so we will use `st_within`.
 
+```{r, eval = F}
+pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
+```
+
+This gives an error! 
+
+```
+Error: st_crs(x) == st_crs(y) is not TRUE
+```
+
+Turns out, this won't work right now because our coordinate reference systems are not the same. Luckily, this is easily resolved using `st_transform`, and projecting our population object into Alaska Albers.
+
+```{r}
+pop_sf <- st_transform(pop_sf, crs = 3338)
+```
+
 ```{r}
 pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
 
 head(pop_joined_sf)
-
 plot(pop_joined_sf["region"])
 ```
 
@@ -208,7 +220,7 @@ ak_pop_sf <- left_join(ak_shp_sf, pop_region)
 head(ak_pop_sf)
 
 #plot to check
-plot(ak_pop_sf[3])
+plot(ak_pop_sf["total_pop"])
 ```
 
 ## `group_by` and `summarize` spatial objects
@@ -257,41 +269,33 @@ ggplot(ak_pop_sf) +
   geom_sf()
 ```
 
-Woah this looks bad!! This is where our original Alaska Albers projection might make things look a lot better. Let's create a new object with the Alaska Albers projection for a better display.
-
-```{r}
-ak_pop_sf_aa <- ak_pop_sf %>% st_transform(crs = 3338)
-
-ggplot(ak_pop_sf_aa) +
-  geom_sf()
-```
-
 This is useful to make sure your file looks correct but doesn't display any information about the data. We can plot these regions and fill each polygon based on the population
 
 ```{r}
-ggplot(ak_pop_sf_aa) +
+ggplot(ak_pop_sf) +
   geom_sf(aes(fill = total_pop))
 ```
 
 We can clean it up a bit, applying a cleaner theme and assigning a continuous color palette.
 
 ```{r}
-ggplot(ak_pop_sf_aa) +
+ggplot(ak_pop_sf) +
   geom_sf(aes(fill = total_pop)) +
   theme_bw() +
   labs(fill = "Total Population") +
   scale_fill_continuous(low = "khaki", high =  "firebrick", labels = comma)
 ```
 
-We can also add another shapefile, say if we want to visualize rivers in Alaska as well.
+We can also plot multiple shapefiles in the same plot. Say if we want to visualize rivers in Alaska, in addition to the location of communities, since many communities in Alaska are on rivers. We can read in a rivers shapefile, doublecheck the `crs` to make sure it is what we need, and then plot all three shapefiles.
 
 ```{r}
 rivers <- read_sf("shapefiles/ak_rivers.shp")
+st_crs(rivers)
 ```
 
 ```{r}
 ggplot() +
-  geom_sf(data = ak_pop_sf_aa, aes(fill = total_pop)) +
+  geom_sf(data = ak_pop_sf, aes(fill = total_pop)) +
   geom_sf(data = rivers, aes(size = StrOrder), color = "black") +
   geom_sf(data = pop_sf, aes(), size = .5) +
   scale_size(range = c(0.01, 0.2), guide = F) +
@@ -317,17 +321,23 @@ epsg3338 <- leaflet::leafletCRS(
   resolutions = 2^(16:7))
 ```
 
-You might notice that this looks familiar! The syntax is a bit different, but most of this information is also contained within the `crs` of our Alaska Albers projected shapefile:
+You might notice that this looks familiar! The syntax is a bit different, but most of this information is also contained within the `crs` of our shapefile:
 
 ```{r}
-st_crs(ak_pop_sf_aa)
+st_crs(ak_pop_sf)
 ```
 
-Let's make a simple map using this projection.
+Since `leaflet` requires that we use an unprojected coordinate system, let's use `st_transform` yet again to get back to WGS84.
+
+```{r}
+ak_pop_crs <- ak_pop_sf %>% st_transform(crs = 4326)
+```
+
+
 
 ```{r}
 m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
-        addPolygons(data = ak_pop_sf, 
+        addPolygons(data = ak_pop_crs, 
                     fillColor = "gray",
                     weight = 1)
 
@@ -337,10 +347,10 @@ m
 We can add labels, legends, and a color scale.
 
 ```{r}
-pal <- colorNumeric(palette = "Reds", domain = ak_pop_sf$total_pop)
+pal <- colorNumeric(palette = "Reds", domain = ak_pop_crs$total_pop)
 
 m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
-        addPolygons(data = ak_pop_sf, 
+        addPolygons(data = ak_pop_crs, 
                     fillColor = ~pal(total_pop),
                     weight = 1,
                     color = "black",
@@ -348,7 +358,7 @@ m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
                     label = ~region) %>% 
         addLegend(position = "bottomleft",
                   pal = pal,
-                  values = range(ak_pop_sf$total_pop),
+                  values = range(ak_pop_crs$total_pop),
                   title = "Total Population")
 
 m
@@ -360,14 +370,10 @@ We can also add the individual communities, with popup labels showing their popu
 
 ```{r}
 
-riv_gcs <- rivers %>% st_transform(crs = 4326)
-
-
-
-pal <- colorNumeric(palette = "Reds", domain = ak_pop_sf$total_pop)
+pal <- colorNumeric(palette = "Reds", domain = ak_pop_crs$total_pop)
 
 m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
-        addPolygons(data = ak_pop_sf, 
+        addPolygons(data = ak_pop_crs, 
                     fillColor = ~pal(total_pop),
                     weight = 1,
                     color = "black",
@@ -384,7 +390,7 @@ m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
         
         addLegend(position = "bottomleft",
                   pal = pal,
-                  values = range(ak_pop_sf$total_pop),
+                  values = range(ak_pop_crs$total_pop),
                   title = "Total Population")
 
 m
