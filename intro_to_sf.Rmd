@@ -64,16 +64,17 @@ Read in a shapefile of Alaska using `readOGR()` from the `rgdal` package, and `s
 
 ## Read in shapefile using rgdal
 
-system.time(ak_shp_rgdal <- readOGR(dsn="shapefiles", layer="sasap_regions"))
+system.time(ak_shp_rgdal <- readOGR(dsn="shapefiles", layer="ak_regions"))
 object.size(ak_shp_rgdal)
 plot(ak_shp_rgdal)
 ```
 
 ```{r read_shp_sf}
 ## Read in shapefile using sf
-system.time(ak_shp_sf <- st_read(dsn = "shapefiles", layer="sasap_regions")) 
+system.time(ak_shp_sf <- st_read(dsn = "shapefiles", layer="ak_regions")) 
 object.size(ak_shp_sf)
-plot(ak_shp_sf)      
+plot(ak_shp_sf)  
+
 ```
 
 
