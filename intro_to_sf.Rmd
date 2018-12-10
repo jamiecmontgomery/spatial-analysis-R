@@ -122,7 +122,9 @@ plot(ak_shp_sf)
 **sf** objects can be used as a regular `data.frame` object in many operations
 ```{r}
 ak_shp_sf
+```
 
+```{r}
 nrow(ak_shp_sf)
 ncol(ak_shp_sf)
 ```
