@@ -252,6 +252,26 @@ ggplot(ak_pop_sf_aa) +
   scale_fill_continuous(low = "khaki", high =  "firebrick", labels = comma)
 ```
 
+We can also add another shapefile, say if we want to visualize rivers in Alaska as well.
+
+```{r}
+rivers <- read_sf("shapefiles/ak_rivers.shp")
+
+head(rivers)
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = ak_pop_sf_aa, aes(fill = total_pop)) +
+  geom_sf(data = rivers, aes(size = StrOrder), color = "black") +
+  geom_sf(data = pop_sf, aes(), size = .5) +
+  scale_size(range = c(0.01, 0.2), guide = F) +
+  theme_bw() +
+  labs(fill = "Total Population") +
+  scale_fill_continuous(low = "khaki", high =  "firebrick", labels = comma)
+
+```
+
 # Visualize with leaflet
 
 We can also make an interactive map using `leaflet`. 
@@ -310,6 +330,11 @@ m
 We can also add the individual communities, with popup labels showing their population, on top of that!
 
 ```{r}
+
+riv_gcs <- rivers %>% st_transform(crs = 4326)
+
+
+
 pal <- colorNumeric(palette = "Reds", domain = ak_pop_sf$total_pop)
 
 m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
@@ -327,6 +352,7 @@ m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
                          weight = 0.25,
                          color = "black",
                          label = ~paste0(pop_sf$city, ", population ", comma(pop_sf$population))) %>%
+        
         addLegend(position = "bottomleft",
                   pal = pal,
                   values = range(ak_pop_sf$total_pop),
