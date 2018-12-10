@@ -209,6 +209,34 @@ head(ak_pop_sf)
 plot(ak_pop_sf[3])
 ```
 
+## `group_by` and `summarize` spatial objects
+
+So far, we have learned how to use `sf` and `dplyr` to use a spatial join on two datasets and calculate a summary metric from the result of that join. 
+
+The `group_by` and `summarize` functions can also be used on `sf` objects to summarize within a dataset and combine geometries. Many of the `tidyverse` functions have methods specific for `sf` objects, some of which have additional arguments that wouldn't be relevant to the `data.frame` methods. You can run `?sf::tidyverse` to get documentation on the `tidyverse` `sf` methods.
+
+Let's try some out. Say we want to calculate the population by Alaska management area, as opposed to region.
+
+```{r}
+ak_mgmt <- ak_pop_sf %>% 
+  group_by(mgmt_area) %>% 
+  summarize(total_pop = sum(total_pop))
+
+plot(ak_mgmt["total_pop"])
+```
+
+Notice that the region geometries were combined into a single polygon for each management area.
+
+If we don't want to combine geometries, we can specifcy `do_union = F` as an argument.
+
+```{r}
+ak_mgmt <- ak_pop_sf %>% 
+  group_by(mgmt_area) %>% 
+  summarize(total_pop = sum(total_pop), do_union = F)
+
+plot(ak_mgmt["total_pop"])
+```
+
 # Save
 
 Save the spatial object to disk using `st_write()` and specifying the filename as well as the [driver](http://www.gdal.org/ogr_formats.html).
@@ -257,8 +285,6 @@ We can also add another shapefile, say if we want to visualize rivers in Alaska 
 
 ```{r}
 rivers <- read_sf("shapefiles/ak_rivers.shp")
-
-head(rivers)
 ```
 
 ```{r}
