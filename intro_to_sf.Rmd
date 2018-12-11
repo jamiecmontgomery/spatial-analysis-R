@@ -201,13 +201,13 @@ head(pop_joined_sf)
 plot(pop_joined_sf["region"])
 ```
 
-Next we compute the total population for each region and drop the geometry because we are only looking for the data without a geospatial reference at this point. We will join this data to the AK regions shapefile next.
+Next we compute the total population for each region and drop the geometry because we are only looking for the data without a geospatial reference at this point. We drop the geometry using `as.data.frame`, on the advice of the `sf::tidyverse` help page. We will join this data to the AK regions shapefile next.
 
 ```{r}
 pop_region <- pop_joined_sf %>% 
   group_by(region) %>% 
   summarise(total_pop = sum(population)) %>%
-  st_set_geometry(NULL)
+  as.data.frame()
 
 head(pop_region)
 ```
