@@ -259,10 +259,10 @@ plot(ak_mgmt["total_pop"])
 
 # Save
 
-Save the spatial object to disk using `st_write()` and specifying the filename as well as the [driver](http://www.gdal.org/ogr_formats.html).
+Save the spatial object to disk using `write_sf()` and specifying the filename. Writing your file with the extension .shp will assume an ESRI driver [driver](http://www.gdal.org/ogr_formats.html), but there are many other format options available.
 
 ```{r plot}
-write_sf(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
+write_sf(ak_pop_sf, "shapefiles/ak_regions_population.shp", delete_layer = TRUE)
 ```
 
 # Visualize with ggplot
