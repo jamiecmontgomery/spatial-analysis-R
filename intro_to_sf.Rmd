@@ -133,8 +133,10 @@ Since `sf` objects are dataframes, they play nicely with packages in the tidyver
 
 ```{r select}
 ak_shp_sf %>%
-  select(region, geometry)
+  select(region)
 ```
+
+Note the sticky geometry column! The geometry column will stay with your `sf` object even if it is not called explicitly.
 
 `filter()`
 
@@ -201,13 +203,13 @@ head(pop_joined_sf)
 plot(pop_joined_sf["region"])
 ```
 
-Next we compute the total population for each region and drop the geometry because we are only looking for the data without a geospatial reference at this point. We drop the geometry using `as.data.frame`, on the advice of the `sf::tidyverse` help page. We will join this data to the AK regions shapefile next.
+Next we compute the total population for each region. In this case, we want to do a `group_by` and `summarise` as this were a regular `data.frame` - otherwise all of our point geometries would be aggregated by region which is not what we want. We remove the sticky geometry using `as.data.frame`, on the advice of the `sf::tidyverse` help page.
 
 ```{r}
 pop_region <- pop_joined_sf %>% 
+  as.data.frame() %>% 
   group_by(region) %>% 
-  summarise(total_pop = sum(population)) %>%
-  as.data.frame()
+  summarise(total_pop = sum(population))
 
 head(pop_region)
 ```
