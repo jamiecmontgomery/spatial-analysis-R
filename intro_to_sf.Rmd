@@ -71,9 +71,9 @@ plot(ak_shp_rgdal)
 
 ```{r read_shp_sf}
 ## Read in shapefile using sf
-system.time(ak_shp_sf <- st_read(dsn = "shapefiles", layer="ak_regions")) 
+system.time(ak_shp_sf <- read_sf("shapefiles/ak_regions.shp")) 
 object.size(ak_shp_sf)
-plot(ak_shp_sf)  
+head(ak_shp_sf)  
 ```
 
 
@@ -125,6 +125,10 @@ nrow(ak_shp_sf)
 ncol(ak_shp_sf)
 ```
 
+![](images/Allison_sf_art.png)
+Art by Allison Horst
+
+
 ## `sf` & the Tidyverse
 
 Since `sf` objects are dataframes, they play nicely with packages in the tidyverse. Here are a couple of simple examples:
@@ -133,8 +137,10 @@ Since `sf` objects are dataframes, they play nicely with packages in the tidyver
 
 ```{r select}
 ak_shp_sf %>%
-  select(region, geometry)
+  select(region)
 ```
+
+Note the sticky geometry column! The geometry column will stay with your `sf` object even if it is not called explicitly.
 
 `filter()`
 
@@ -201,13 +207,13 @@ head(pop_joined_sf)
 plot(pop_joined_sf["region"])
 ```
 
-Next we compute the total population for each region and drop the geometry because we are only looking for the data without a geospatial reference at this point. We will join this data to the AK regions shapefile next.
+Next we compute the total population for each region. In this case, we want to do a `group_by` and `summarise` as this were a regular `data.frame` - otherwise all of our point geometries would be aggregated by region which is not what we want. We remove the sticky geometry using `as.data.frame`, on the advice of the `sf::tidyverse` help page.
 
 ```{r}
 pop_region <- pop_joined_sf %>% 
+  as.data.frame() %>% 
   group_by(region) %>% 
-  summarise(total_pop = sum(population)) %>%
-  st_set_geometry(NULL)
+  summarise(total_pop = sum(population))
 
 head(pop_region)
 ```
@@ -253,10 +259,10 @@ plot(ak_mgmt["total_pop"])
 
 # Save
 
-Save the spatial object to disk using `st_write()` and specifying the filename as well as the [driver](http://www.gdal.org/ogr_formats.html).
+Save the spatial object to disk using `write_sf()` and specifying the filename. Writing your file with the extension .shp will assume an ESRI driver [driver](http://www.gdal.org/ogr_formats.html), but there are many other format options available.
 
 ```{r plot}
-st_write(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
+write_sf(ak_pop_sf, "shapefiles/ak_regions_population.shp", delete_layer = TRUE)
 ```
 
 # Visualize with ggplot
