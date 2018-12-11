@@ -1,6 +1,0 @@
-{
-  "name": "Spatial-analysis-r",
-  "tagline": "Introduction to spatial analysis in R (rasters)",
-  "body": "#Introduction to spatial analysis in R (rasters)\r\n\r\n###Jamie Afflerbach\r\n\r\n##[Click here for the tutorial](http://jafflerbach.github.io/spatial-analysis-R/intro_spatial_data_R.html)\r\n\r\nR is getting better and better for spatial data visualization and analyses. This tutorial specifically focuses on working with raster, or gridded, data in R.\r\n\r\nThe tutorial is laid out as an exploratory analyses similar to those I've done myself. The objective of this tutorial is to use different types of raster data to answer the fictional scientific question:\r\n\r\n####What areas within the California Current are suitable for seamonkey aquaculture?\r\n\r\n![](./images/seamonkeys.png)\r\n\r\nAlong the way you'll learn how to **read**, **reproject**, **crop**, **mask**, run **calculations and zonal statistics**, **plot**, **save** and more with raster data in RStudio.\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
-  "note": "Don't delete this file! It's used internally to help with page regeneration."
-}

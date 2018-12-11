@@ -1,0 +1,407 @@
+---
+title: "Introduction to the sf Package"
+author: "Jamie Afflerbach"
+output:
+  html_document:
+    code_folding: show
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+---
+
+# Background
+
+From the [**sf**](https://r-spatial.github.io/sf/articles/sf1.html) vignette:
+
+> Simple features or simple feature access refers to a formal standard (ISO 19125-1:2004) that describes how objects in the real world can be represented in computers, with emphasis on the spatial geometry of these objects. It also describes how such objects can be stored in and retrieved from databases, and which geometrical operations should be defined for them.
+
+> The standard is widely implemented in spatial databases (such as PostGIS), commercial GIS (e.g., ESRI ArcGIS) and forms the vector data basis for libraries such as GDAL. A subset of simple features forms the GeoJSON standard.
+
+> R has well-supported classes for storing spatial data (sp) and interfacing to the above mentioned environments (rgdal, rgeos), but has so far lacked a complete implementation of simple features, making conversions at times convoluted, inefficient or incomplete. The package sf tries to fill this gap, and aims at succeeding sp in the long term.
+
+
+```{r setup, include=FALSE, warning = F, message = F}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+
+# install.packages('sf')
+library(sf)
+# install.packages('rgdal')
+library(rgdal)
+# install.packages('dplyr')
+library(dplyr)
+# install.packages('ggplot2')
+library(ggplot2)
+# install.packages('leaflet')
+library(leaflet)
+# install.packages('scales')
+library(scales)
+```
+
+
+The **sf** package is an R implementation of [Simple Features](https://en.wikipedia.org/wiki/Simple_Features). This package incorporates:  
+
+- a new spatial data class system in R  
+- functions for reading and writing data  
+- tools for spatial operations on vectors  
+
+Most of the functions in this package starts with prefix `st_` which stands for *spatial* and *temporal*.
+
+
+# Reading a shapefile  
+
+If you've used `readOGR()` from the `rgdal` package, you'll notice the similarities in arguments for the `st_read()` function. We'll do a quick comparison of the two functions here.
+
+Read in a shapefile of Alaska using `readOGR()` from the `rgdal` package, and `st_read` from the `sf` package.
+
+* `dsn` is the path name  
+* `layer` is the name of the file  
+
+*NOTE: you do not need to add an extension to the layer name*
+
+```{r read_shp_rdgal}
+
+## Read in shapefile using rgdal
+
+system.time(ak_shp_rgdal <- readOGR(dsn="shapefiles", layer="ak_regions"))
+object.size(ak_shp_rgdal)
+plot(ak_shp_rgdal)
+```
+
+```{r read_shp_sf}
+## Read in shapefile using sf
+system.time(ak_shp_sf <- st_read(dsn = "shapefiles", layer="ak_regions")) 
+object.size(ak_shp_sf)
+plot(ak_shp_sf)  
+```
+
+
+You'll notice right away that these two objects are being plotted differently. This is because these two objects are of different types.
+
+**sf** objects usually have two classes - `sf` and `data.frame`. Two main differences comparing to a regular `data.frame` object are spatial metadata (`geometry type`, `dimension`, `bbox`, `epsg (SRID)`, `proj4string`) and additional column - typically named `geom` or `geometry`.
+
+```{r}
+class(ak_shp_sf)
+```
+
+## Coordinate Reference System
+
+Every `sf` object needs a coordinate reference system (or `crs`) defined in order to work with it correctly. A coordinate reference system contains both a datum and a projection. The datum is how you georeference your points (in 3 dimensions!) onto a spheroid. The projection is how these points are mathematically transformed to represent the georeferenced point on a flat piece of paper. All coordinate reference systems require a datum. However, some coordinate reference systems are "unprojected" (also called geographic coordinate systems). Coordinates in latitude/longitude use a geographic (unprojected) coordinate system. One of the most commonly used geographic coordinate systems is WGS 1984.
+
+You can view what `crs` is set by using the function `st_crs`
+
+```{r}
+st_crs(ak_shp_sf)
+```
+
+This is pretty confusing looking. Without getting into the details, that long string says that this data has a greographic coordinate system (WGS84) with no projection. A convenient way to reference `crs` quickly is by using the EPSG code, a number that represents a standard projection and datum. You can check out a list of (lots!) of EPSG codes [here](http://spatialreference.org/ref/epsg/?page=1). 
+
+You will often need to transform your geospatial data from one coordinate system to another. The `st_transform` function does this quickly for us. You may have noticed the maps above looked wonky because of the dateline. We might want to set a different projection for this data so it plots nicer. A good one for Alaska is called the Alaska Albers projection, with an EPSG code of [3338](http://spatialreference.org/ref/epsg/3338/).
+
+
+```{r}
+ak_shp_sf <- ak_shp_sf %>%
+  st_transform(crs = 3338)
+
+st_crs(ak_shp_sf)
+```
+
+```{r}
+plot(ak_shp_sf)
+```
+
+Much better!
+
+# Attributes
+
+**sf** objects can be used as a regular `data.frame` object in many operations
+```{r}
+ak_shp_sf
+```
+
+```{r}
+nrow(ak_shp_sf)
+ncol(ak_shp_sf)
+```
+
+## `sf` & the Tidyverse
+
+Since `sf` objects are dataframes, they play nicely with packages in the tidyverse. Here are a couple of simple examples:
+
+`select()`
+
+```{r select}
+ak_shp_sf %>%
+  select(region, geometry)
+```
+
+`filter()`
+
+```{r filter}
+ak_shp_sf %>%
+  filter(region == "Southeast")
+```
+
+
+## Joins
+
+You can also use the `sf` package to create spatial joins, useful for when you want to utilize two datasets together. As an example, let's ask a question: how many people live in each of these Alaska regions?
+
+We have some population data, but it gives the number of people by city, not by region. To determine the number of people per region we will need to:
+
++ read in the city data from a csv and turn it into an `sf` object
++ use a spatial join (`st_join`) to assign each city to a region
++ use `group_by` and `summarize` to calculate the total population by region
+
+
+First, read in the population data as a regular `data.frame`.
+
+```{r}
+pop <- read.csv("shapefiles/alaska_population.csv")
+```
+
+The `st_join` function is a spatial left join. The arguments for both the left and right tables are objects of class `sf` which means we will first need to turn our population `data.frame` with latitude and longitude coordinates into an `sf` object. 
+
+We can do this easily using the `st_as_sf` function, which takes as arguments the coordinates and the `crs`. The `remove = F` specification here ensures that when we create our `geometry` column, we retain our original `lat` `lng` columns, which we will need later for plotting. Although it isn't said anywhere explicitly in the file, let's assume that the coordinate system used to reference the latitude longitude coordinates is WGS84, which has a `crs` number of 4236.
+
+```{r}
+pop_sf <- st_as_sf(pop, 
+                  coords = c('lng', 'lat'),
+                  crs = 4326,
+                  remove = F)
+
+head(pop_sf)
+```
+
+Now we can do our spatial join! You can specify what geometry function the join uses (`st_intersects`, `st_within`, `st_crosses`, `st_is_within_distance`, ...) in the `join` argument. The geometry function you use will depend on what kind of operation you want to do, and the geometries of your shapefiles.
+
+In this case, we want to find what region each city falls within, so we will use `st_within`.
+
+```{r, eval = F}
+pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
+```
+
+This gives an error! 
+
+```
+Error: st_crs(x) == st_crs(y) is not TRUE
+```
+
+Turns out, this won't work right now because our coordinate reference systems are not the same. Luckily, this is easily resolved using `st_transform`, and projecting our population object into Alaska Albers.
+
+```{r}
+pop_sf <- st_transform(pop_sf, crs = 3338)
+```
+
+```{r}
+pop_joined_sf <- st_join(pop_sf, ak_shp_sf, join = st_within)
+
+head(pop_joined_sf)
+plot(pop_joined_sf["region"])
+```
+
+Next we compute the total population for each region and drop the geometry because we are only looking for the data without a geospatial reference at this point. We will join this data to the AK regions shapefile next.
+
+```{r}
+pop_region <- pop_joined_sf %>% 
+  group_by(region) %>% 
+  summarise(total_pop = sum(population)) %>%
+  st_set_geometry(NULL)
+
+head(pop_region)
+```
+
+And use a regular `left_join` to get the information back to the Alaska region shapefile. Note that we need this step in order to retain our region geometries so that we can make some maps.
+
+```{r}
+ak_pop_sf <- left_join(ak_shp_sf, pop_region)
+
+head(ak_pop_sf)
+
+#plot to check
+plot(ak_pop_sf["total_pop"])
+```
+
+## `group_by` and `summarize` spatial objects
+
+So far, we have learned how to use `sf` and `dplyr` to use a spatial join on two datasets and calculate a summary metric from the result of that join. 
+
+The `group_by` and `summarize` functions can also be used on `sf` objects to summarize within a dataset and combine geometries. Many of the `tidyverse` functions have methods specific for `sf` objects, some of which have additional arguments that wouldn't be relevant to the `data.frame` methods. You can run `?sf::tidyverse` to get documentation on the `tidyverse` `sf` methods.
+
+Let's try some out. Say we want to calculate the population by Alaska management area, as opposed to region.
+
+```{r}
+ak_mgmt <- ak_pop_sf %>% 
+  group_by(mgmt_area) %>% 
+  summarize(total_pop = sum(total_pop))
+
+plot(ak_mgmt["total_pop"])
+```
+
+Notice that the region geometries were combined into a single polygon for each management area.
+
+If we don't want to combine geometries, we can specifcy `do_union = F` as an argument.
+
+```{r}
+ak_mgmt <- ak_pop_sf %>% 
+  group_by(mgmt_area) %>% 
+  summarize(total_pop = sum(total_pop), do_union = F)
+
+plot(ak_mgmt["total_pop"])
+```
+
+# Save
+
+Save the spatial object to disk using `st_write()` and specifying the filename as well as the [driver](http://www.gdal.org/ogr_formats.html).
+
+```{r plot}
+st_write(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
+```
+
+# Visualize with ggplot
+
+`ggplot2` now has integrated functionality to plot sf objects using `geom_sf()`.
+
+```{r}
+#simplest plot
+ggplot(ak_pop_sf) +
+  geom_sf()
+```
+
+This is useful to make sure your file looks correct but doesn't display any information about the data. We can plot these regions and fill each polygon based on the population
+
+```{r}
+ggplot(ak_pop_sf) +
+  geom_sf(aes(fill = total_pop))
+```
+
+We can clean it up a bit, applying a cleaner theme and assigning a continuous color palette.
+
+```{r}
+ggplot(ak_pop_sf) +
+  geom_sf(aes(fill = total_pop)) +
+  theme_bw() +
+  labs(fill = "Total Population") +
+  scale_fill_continuous(low = "khaki", high =  "firebrick", labels = comma)
+```
+
+We can also plot multiple shapefiles in the same plot. Say if we want to visualize rivers in Alaska, in addition to the location of communities, since many communities in Alaska are on rivers. We can read in a rivers shapefile, doublecheck the `crs` to make sure it is what we need, and then plot all three shapefiles.
+
+```{r}
+rivers <- read_sf("shapefiles/ak_rivers.shp")
+st_crs(rivers)
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = ak_pop_sf, aes(fill = total_pop)) +
+  geom_sf(data = rivers, aes(size = StrOrder), color = "black") +
+  geom_sf(data = pop_sf, aes(), size = .5) +
+  scale_size(range = c(0.01, 0.2), guide = F) +
+  theme_bw() +
+  labs(fill = "Total Population") +
+  scale_fill_continuous(low = "khaki", high =  "firebrick", labels = comma)
+
+```
+
+# Visualize with leaflet
+
+We can also make an interactive map using `leaflet`. 
+
+Leaflet (unlike ggplot) will project data for you. The catch is that you have to give it both a projection (like Alaska Albers), and that your shapefile must use a geographic coordinate system. This means that we need to use our shapefile with the 4326 EPSG code. Remember you can always check what `crs` you have set using `st_crs`.
+
+Here we define a leaflet projection for Alaska Albers, and save it as a variable to use later.
+
+```{r}
+epsg3338 <- leaflet::leafletCRS(
+  crsClass = "L.Proj.CRS",
+  code = "EPSG:3338",
+  proj4def =  "+proj=aea +lat_1=55 +lat_2=65 +lat_0=50 +lon_0=-154 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  resolutions = 2^(16:7))
+```
+
+You might notice that this looks familiar! The syntax is a bit different, but most of this information is also contained within the `crs` of our shapefile:
+
+```{r}
+st_crs(ak_pop_sf)
+```
+
+Since `leaflet` requires that we use an unprojected coordinate system, let's use `st_transform` yet again to get back to WGS84.
+
+```{r}
+ak_pop_crs <- ak_pop_sf %>% st_transform(crs = 4326)
+```
+
+
+
+```{r}
+m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
+        addPolygons(data = ak_pop_crs, 
+                    fillColor = "gray",
+                    weight = 1)
+
+m
+```
+
+We can add labels, legends, and a color scale.
+
+```{r}
+pal <- colorNumeric(palette = "Reds", domain = ak_pop_crs$total_pop)
+
+m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
+        addPolygons(data = ak_pop_crs, 
+                    fillColor = ~pal(total_pop),
+                    weight = 1,
+                    color = "black",
+                    fillOpacity = 1,
+                    label = ~region) %>% 
+        addLegend(position = "bottomleft",
+                  pal = pal,
+                  values = range(ak_pop_crs$total_pop),
+                  title = "Total Population")
+
+m
+
+```
+
+
+We can also add the individual communities, with popup labels showing their population, on top of that!
+
+```{r}
+
+pal <- colorNumeric(palette = "Reds", domain = ak_pop_crs$total_pop)
+
+m <- leaflet(options = leafletOptions(crs = epsg3338)) %>%
+        addPolygons(data = ak_pop_crs, 
+                    fillColor = ~pal(total_pop),
+                    weight = 1,
+                    color = "black",
+                    fillOpacity = 1) %>% 
+        addCircleMarkers(data = pop_sf,
+                         lat = ~lat,
+                         lng = ~lng,
+                         radius = ~log(population/500), # arbitrary scaling
+                         fillColor = "gray",
+                         fillOpacity = 1,
+                         weight = 0.25,
+                         color = "black",
+                         label = ~paste0(pop_sf$city, ", population ", comma(pop_sf$population))) %>%
+        
+        addLegend(position = "bottomleft",
+                  pal = pal,
+                  values = range(ak_pop_crs$total_pop),
+                  title = "Total Population")
+
+m
+
+```
+
+There is a lot more functionality to `sf` including the ability to `intersect` polygons, calculate `distance`, create a `buffer`, and more. Here are some more great resources and tutorials for a deeper dive into this great package:
+
+[Spatial analysis in R with the sf package](https://cdn.rawgit.com/rhodyrstats/geospatial_with_sf/bc2b17cf/geospatial_with_sf.html)  
+[Intro to Spatial Analysis](https://cdn.rawgit.com/Nowosad/Intro_to_spatial_analysis/05676e29/Intro_to_spatial_analysis.html#1)  
+[sf github repo](https://github.com/r-spatial/sf)    
+[Tidy spatial data in R: using dplyr, tidyr, and ggplot2 with sf](http://strimas.com/r/tidy-sf/)    
+[mapping-fall-foliage-with-sf](https://rud.is/b/2017/09/18/mapping-fall-foliage-with-sf/)    
+

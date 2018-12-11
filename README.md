@@ -1,18 +1,27 @@
-#Introduction to spatial analysis in R (rasters)
+# Introduction to spatial analysis in R
 
-###Jamie Afflerbach
+### Jamie Afflerbach & Jeanette Clark
 
-##[Click here for the tutorial](http://jafflerbach.github.io/spatial-analysis-R/intro_spatial_data_R.html)
+Click on the links below for the tutorials on:
 
-R is getting better and better for spatial data visualization and analyses. This tutorial specifically focuses on working with raster, or gridded, data in R.
+- [sf](http://jafflerbach.github.io/spatial-analysis-R/intro_to_sf.html)
+- [raster analysis](http://jafflerbach.github.io/spatial-analysis-R/intro_spatial_data_R.html)
 
-The tutorial is laid out as an exploratory analyses similar to those I've done myself. The objective of this tutorial is to use different types of raster data to answer the fictional scientific question:
+R is getting better and better for spatial data visualization and analyses. This tutorial specifically focuses on working with raster, or gridded, data in R and gives a brief introduction to the [`sf` package](https://r-spatial.github.io/sf/articles/sf1.html).
 
-####What areas within the California Current are suitable for seamonkey aquaculture?
+You can either fork this repository into your personal GitHub account, or download the repoository as a .zip file by hitting the green "Clone or Download" button.
 
-![](./images/seamonkeys.png)
+## Required libraries
 
-Along the way you'll learn how to **read**, **reproject**, **crop**, **mask**, run **calculations and zonal statistics**, **plot**, **save** and more with raster data in RStudio.
+You will need the following libraries for the tutorial:
+
+`sf`, `rgdal`, `dplyr`, `ggplot2`, `raster`, `devtools`, `leaflet`, `scales`, all of which are on CRAN and can be installed using `install.packages()` in your R console. You will also need to install a new package, [`fasterize`](https://github.com/ecohealthalliance/fasterize) using devtools. For this you'll need to run:
+
+```r
+devtools::install_github("ecohealthalliance/fasterize")
+```
+
+
 
 
 
