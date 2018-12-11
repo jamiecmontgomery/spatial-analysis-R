@@ -15,7 +15,7 @@ You can either fork this repository into your personal GitHub account, or downlo
 
 You will need the following libraries for the tutorial:
 
-`sf`, `rgdal`, `dplyr`, `ggplot2`, `raster`, `devtools`, `leaflet`, all of which are on CRAN and can be installed using `install.packages()` in your R console. You will also need to install a new package, [`fasterize`](https://github.com/ecohealthalliance/fasterize) using devtools. For this you'll need to run:
+`sf`, `rgdal`, `dplyr`, `ggplot2`, `raster`, `devtools`, `leaflet`, `scales`, all of which are on CRAN and can be installed using `install.packages()` in your R console. You will also need to install a new package, [`fasterize`](https://github.com/ecohealthalliance/fasterize) using devtools. For this you'll need to run:
 
 ```r
 devtools::install_github("ecohealthalliance/fasterize")
