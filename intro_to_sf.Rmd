@@ -71,9 +71,9 @@ plot(ak_shp_rgdal)
 
 ```{r read_shp_sf}
 ## Read in shapefile using sf
-system.time(ak_shp_sf <- st_read(dsn = "shapefiles", layer="ak_regions")) 
+system.time(ak_shp_sf <- read_sf("shapefiles/ak_regions.shp")) 
 object.size(ak_shp_sf)
-plot(ak_shp_sf)  
+head(ak_shp_sf)  
 ```
 
 
@@ -124,6 +124,10 @@ ak_shp_sf
 nrow(ak_shp_sf)
 ncol(ak_shp_sf)
 ```
+
+![](images/Allison_sf_art.png)
+Art by Allison Horst
+
 
 ## `sf` & the Tidyverse
 
@@ -258,7 +262,7 @@ plot(ak_mgmt["total_pop"])
 Save the spatial object to disk using `st_write()` and specifying the filename as well as the [driver](http://www.gdal.org/ogr_formats.html).
 
 ```{r plot}
-st_write(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
+write_sf(ak_pop_sf, "shapefiles/ak_regions_population.shp", driver = "ESRI Shapefile", delete_layer = TRUE)
 ```
 
 # Visualize with ggplot
